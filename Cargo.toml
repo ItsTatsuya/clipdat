@@ -1,6 +1,6 @@
 [package]
 name = "clipdat"
-version = "0.2.1"
+version = "0.2.2"
 description = "Clipdat - native video player and clipper"
 license = "MIT"
 repository = "https://github.com/ItsTatsuya/clipdat"
