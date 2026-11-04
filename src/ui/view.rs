@@ -9,7 +9,7 @@ use gpui::{
 };
 
 use super::{
-    app::{Clipdat, Drag},
+    app::{Clipdat, Drag, DOCK_H, TITLEBAR_H},
     theme::*,
     widgets::*,
 };
@@ -17,8 +17,13 @@ use crate::fmt;
 
 impl Render for Clipdat {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.sync_margins(window);
         let has = self.path.is_some();
+        self.clip_e = self.clip_tw.follow(has && self.clip_on);
+        self.sheet_e = self.sheet_tw.follow(has && self.clip_on && self.sheet_open);
+        if self.clip_tw.animating() || self.sheet_tw.animating() {
+            window.request_animation_frame();
+        }
+        self.sync_margins(window);
         div()
             .id("root")
             .size_full()
@@ -35,7 +40,7 @@ impl Render for Clipdat {
                 if this.drag.is_some() {
                     this.drag_to(ev.position.x, cx);
                 } else {
-                    this.video_move(ev.position, window);
+                    this.video_move(ev.position, ev.pressed_button == Some(MouseButton::Left), window);
                 }
             }))
             .on_mouse_up(MouseButton::Left, cx.listener(|this, _, _, cx| this.end_drag(cx)))
@@ -47,11 +52,17 @@ impl Render for Clipdat {
                 }
             }))
             .child(self.stage(window, cx))
-            .when(has && self.clip_on, |d| d.child(self.dock(cx)))
+            // The dock rises like a drawer: its slot grows from 0 to DOCK_H and the stage shrinks with it.
+            .when(has && self.clip_e > 0.001, |d| {
+                let e = self.clip_e;
+                d.child(div().flex_none().h(px(DOCK_H * e)).overflow_hidden().opacity((e * 1.6).min(1.0)).child(self.dock(cx)))
+            })
             .when(self.settings_open, |d| d.child(self.settings_modal(cx)))
             .when(self.menu.is_some(), |d| d.child(self.menu_popup(cx)))
     }
 }
+
+const CAPTION_W: f32 = 46.;
 
 impl Clipdat {
     fn stage(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -114,8 +125,8 @@ impl Clipdat {
                     ),
                 )
             })
-            .when(has && !self.clip_on, |d| d.child(self.osc(cx)))
-            .when(has && self.clip_on && self.sheet_open, |d| d.child(self.sheet(window, cx)))
+            .when(has && self.clip_e < 0.999, |d| d.child(self.osc(cx)))
+            .when(has && self.sheet_e > 0.001, |d| d.child(self.sheet(window, cx)))
             .child(self.job_cards(cx))
             .child(self.toast_list())
     }
@@ -126,12 +137,14 @@ impl Clipdat {
         let caption = |id: &'static str, name: &'static str, area: WindowControlArea, close: bool| {
             div()
                 .id(id)
-                .w(px(46.))
+                .w(px(CAPTION_W))
                 .h_full()
                 .flex()
                 .items_center()
                 .justify_center()
                 .window_control_area(area)
+                // Occlude so the video surface underneath never sees these clicks (it would toggle pause).
+                .occlude()
                 .text_color(text2())
                 .hover(move |s| if close { s.bg(rgba_white(0x2e)).text_color(text()) } else { s.bg(hover()).text_color(text()) })
                 .child(icon(name, 16., text2()))
@@ -141,12 +154,15 @@ impl Clipdat {
             .top_0()
             .left_0()
             .right_0()
-            .h(px(40.))
+            .h(px(TITLEBAR_H))
             .flex()
             .items_center()
             .pl(px(14.))
             .bg(linear_gradient(180., linear_color_stop(black().opacity(0.55), 0.), linear_color_stop(black().opacity(0.), 1.)))
-            .window_control_area(WindowControlArea::Drag)
+            // Drag strip as a sibling of the caption buttons, never their parent: GPUI returns the
+            // first window-control hitbox under the mouse, so a wrapping Drag area would swallow
+            // min/max/close (they'd all hit-test as HTCAPTION).
+            .child(div().id("drag").absolute().top_0().bottom_0().left_0().right(px(if fs { 0. } else { CAPTION_W * 3. })).window_control_area(WindowControlArea::Drag).occlude())
             .when(self.idle, |d| d.opacity(0.))
             .child(
                 div()
@@ -223,12 +239,12 @@ impl Clipdat {
         let vol = self.volume;
         div()
             .absolute()
-            .bottom(px(22.))
+            .bottom(px(22. - 36. * self.clip_e))
             .left_0()
             .right_0()
             .flex()
             .justify_center()
-            .when(self.idle, |d| d.opacity(0.))
+            .opacity(if self.idle { 0. } else { 1. - self.clip_e })
             .child(
                 div()
                     .id("osc")

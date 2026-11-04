@@ -44,7 +44,7 @@ pub fn open_default_apps_settings() {
 mod win {
     use std::sync::OnceLock;
     use windows::Win32::{
-        Foundation::{HANDLE, HWND, LPARAM, WPARAM},
+        Foundation::{HANDLE, HWND, LPARAM, POINT, WPARAM},
         System::JobObjects::{
             AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation, SetInformationJobObject,
             JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
@@ -52,7 +52,7 @@ mod win {
         UI::{
             Input::KeyboardAndMouse::{EnableWindow, ReleaseCapture},
             WindowsAndMessaging::{
-                EnumChildWindows, GetClassNameW, SendMessageW, SetWindowPos, HTCAPTION, HWND_BOTTOM, SWP_NOACTIVATE,
+                EnumChildWindows, GetClassNameW, GetCursorPos, PostMessageW, SetWindowPos, HTCAPTION, HWND_BOTTOM, SWP_NOACTIVATE,
                 SWP_NOMOVE, SWP_NOSIZE, WM_NCLBUTTONDOWN,
             },
         },
@@ -116,10 +116,17 @@ mod win {
     }
 
     /// Starts a native window move, as if the user grabbed the title bar.
+    ///
+    /// Posted, never sent: `SendMessage` would run Windows' modal move loop *inside* the GPUI
+    /// mouse handler that calls this, while the app is borrowed. The loop's WM_MOVE / WM_PAINT
+    /// callbacks then re-borrow it and the app aborts. Posting runs the loop after the handler returns.
     pub fn begin_window_drag(hwnd: isize) {
         unsafe {
+            let mut p = POINT::default();
+            let _ = GetCursorPos(&mut p);
             let _ = ReleaseCapture();
-            SendMessageW(HWND(hwnd as _), WM_NCLBUTTONDOWN, Some(WPARAM(HTCAPTION as usize)), Some(LPARAM(0)));
+            let lp = ((p.y as u16 as isize) << 16) | (p.x as u16 as isize);
+            let _ = PostMessageW(Some(HWND(hwnd as _)), WM_NCLBUTTONDOWN, WPARAM(HTCAPTION as usize), LPARAM(lp));
         }
     }
 

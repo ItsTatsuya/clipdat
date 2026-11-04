@@ -27,6 +27,7 @@ use crate::backend::{
 };
 use crate::planner::{self, Plan};
 
+pub const TITLEBAR_H: f32 = 40.0;
 pub const DOCK_H: f32 = 164.0;
 pub const SHEET_W: f32 = 392.0;
 
@@ -131,6 +132,11 @@ pub struct Clipdat {
 
     // clip
     pub clip_on: bool,
+    /// Eased 0..1 progress of the clip dock and export sheet (see `anim.rs`).
+    pub clip_tw: super::anim::Tween,
+    pub sheet_tw: super::anim::Tween,
+    pub clip_e: f32,
+    pub sheet_e: f32,
     pub sheet_open: bool,
     pub segs: Vec<Seg>,
     pub act: usize,
@@ -170,6 +176,8 @@ pub struct Clipdat {
     pub over_controls: bool,
     last_activity: Instant,
     press: Option<Point<Pixels>>,
+    /// Set when we post a window-move; GPUI echoes it back as one more mouse-down, which we skip.
+    win_drag: bool,
     pending_click: Option<Task<()>>,
     last_margins: (f32, f32),
     pub cmd_copied: Option<Instant>,
@@ -274,6 +282,10 @@ impl Clipdat {
             prev_t: 0.0,
             scrubbing: false,
             clip_on: false,
+            clip_tw: super::anim::Tween::new(260),
+            sheet_tw: super::anim::Tween::new(240),
+            clip_e: 0.0,
+            sheet_e: 0.0,
             sheet_open: false,
             segs: Vec::new(),
             act: 0,
@@ -305,6 +317,7 @@ impl Clipdat {
             over_controls: false,
             last_activity: Instant::now(),
             press: None,
+            win_drag: false,
             pending_click: None,
             last_margins: (-1.0, -1.0),
             cmd_copied: None,
@@ -644,8 +657,8 @@ impl Clipdat {
     pub fn sync_margins(&mut self, window: &Window) {
         let size = window.viewport_size();
         let (w, h) = (f32::from(size.width).max(1.0), f32::from(size.height).max(1.0));
-        let bottom = if self.clip_on { (DOCK_H / h).min(0.6) } else { 0.0 };
-        let right = if self.clip_on && self.sheet_open { ((SHEET_W + 20.0) / w).min(0.6) } else { 0.0 };
+        let bottom = (DOCK_H * self.clip_e / h).min(0.6);
+        let right = ((SHEET_W + 20.0) * self.sheet_e / w).min(0.6);
         if (bottom, right) != self.last_margins {
             self.last_margins = (bottom, right);
             self.mpv_set("video-margin-ratio-bottom", json!(bottom));
@@ -656,6 +669,14 @@ impl Clipdat {
     // ---------------------------------------------------------------- mouse on the video
 
     pub fn video_down(&mut self, pos: Point<Pixels>, clicks: usize, window: &mut Window, cx: &mut Context<Self>) {
+        if std::mem::take(&mut self.win_drag) {
+            return;
+        }
+        // Title-bar clicks (min/max/close, drag strip) reach us too, as GPUI forwards non-client
+        // presses as ordinary mouse-downs. They must not count as "click the video to pause".
+        if f32::from(pos.y) < TITLEBAR_H && !window.is_fullscreen() {
+            return;
+        }
         self.close_menu();
         if clicks >= 2 {
             self.pending_click = None;
@@ -667,12 +688,19 @@ impl Clipdat {
         cx.notify();
     }
 
-    pub fn video_move(&mut self, pos: Point<Pixels>, window: &Window) {
+    pub fn video_move(&mut self, pos: Point<Pixels>, left_down: bool, window: &Window) {
+        // A press that ended inside a native move loop never sends us its mouse-up: drop it.
+        if !left_down {
+            self.press = None;
+            self.win_drag = false;
+            return;
+        }
         if let Some(p) = self.press {
             let d = (f32::from(pos.x) - f32::from(p.x)).abs() + (f32::from(pos.y) - f32::from(p.y)).abs();
             if d > 5.0 {
                 self.press = None;
                 if !window.is_fullscreen() {
+                    self.win_drag = true;
                     util::begin_window_drag(self.hwnd);
                 }
             }

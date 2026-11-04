@@ -1,3 +1,4 @@
+pub mod anim;
 pub mod app;
 mod dock;
 pub mod icons;
