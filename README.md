@@ -116,3 +116,7 @@ Clipdat ships these open-source components:
 - **[mpv](https://mpv.io) 0.41** (GPLv2+), built from the [official source](https://github.com/mpv-player/mpv/tree/v0.41.0) by `scripts/build-mpv.ps1`
 - **[FFmpeg](https://ffmpeg.org) 8.1**: an LGPL shared build by [BtbN](https://github.com/BtbN/FFmpeg-Builds)
 - **[Inter](https://rsms.me/inter/)** typeface (SIL Open Font License)
+
+## License
+
+Clipdat is released under the [MIT License](LICENSE). The bundled mpv and FFmpeg binaries keep their own licenses, listed above.

@@ -20,12 +20,15 @@ New-Item -ItemType Directory -Force "$out/bin" | Out-Null
 Copy-Item target/release/clipdat.exe $out
 foreach ($b in 'mpv', 'ffmpeg', 'ffprobe') { Copy-Item "bin/$b.exe" "$out/bin/" }
 Get-ChildItem bin -Filter '*.dll' | Copy-Item -Destination "$out/bin/"   # shared FFmpeg + mpv support libraries
+Copy-Item LICENSE "$out/LICENSE.txt"
 Copy-Item assets/fonts/LICENSE-Inter.txt $out -ErrorAction SilentlyContinue
 @"
 Clipdat (portable)
 
 Run clipdat.exe. To make it your default video player:
 Settings -> General -> Make default...
+
+Clipdat is MIT licensed (LICENSE.txt). https://github.com/ItsTatsuya/clipdat
 
 Bundled: mpv 0.41 (GPLv2+, mpv.io, built against the shared FFmpeg), FFmpeg (LGPL shared build by BtbN, ffmpeg.org), Inter font (OFL).
 "@ | Set-Content "$out/README.txt"
