@@ -1,0 +1,1196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cliper 9000 Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --desk:#07070a;
+  --glass:rgba(24,24,28,.62);
+  --glass-strong:rgba(18,18,22,.9);
+  --panel:#111114;
+  --stroke:rgba(255,255,255,.07);
+  --stroke-2:rgba(255,255,255,.14);
+  --text:#f4f4f6;
+  --text-2:rgba(244,244,246,.66);
+  --text-3:rgba(244,244,246,.40);
+  --accent:#5b8cff;
+  --clip:#ffb224;
+  --clip-soft:rgba(255,178,36,.14);
+  --ok:#34d399;
+  --bad:#ff5c5c;
+  --discord:#5865f2;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --font:"Inter","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:radial-gradient(1200px 700px at 20% 0%,#191c2b 0%,transparent 60%),
+             radial-gradient(900px 600px at 100% 100%,#1f1824 0%,transparent 55%),var(--desk);
+  color:var(--text);
+  font:500 13px/1.45 var(--font);
+  font-feature-settings:"cv11","ss03";
+  -webkit-font-smoothing:antialiased;
+  display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px;overflow-x:hidden;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,select{font:inherit;color:inherit}
+svg{display:block}
+.num{font-variant-numeric:tabular-nums}
+
+/* mockup state switcher (not part of the app) */
+.states{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.states span{color:var(--text-3);font-size:12px;margin-right:6px}
+.states button{padding:6px 12px;border-radius:999px;border:1px solid var(--stroke-2);color:var(--text-2);font-size:12px;font-weight:600}
+.states button.on{background:var(--text);color:#111;border-color:transparent}
+.hint{color:var(--text-3);font-size:11.5px;text-align:center}
+kbd{font:600 10.5px var(--font);padding:1px 5px;border-radius:4px;background:rgba(255,255,255,.08);color:var(--text-2)}
+
+/* ---------- window ---------- */
+.win{
+  position:relative;width:min(1280px,100%);aspect-ratio:16/9.6;
+  border-radius:12px;overflow:hidden;background:#000;
+  box-shadow:0 0 0 1px rgba(255,255,255,.07),0 30px 80px -20px rgba(0,0,0,.8);
+  display:grid;grid-template-rows:1fr auto;
+}
+.stage{position:relative;min-height:0;background:#000;overflow:hidden}
+#video{position:absolute;inset:0;width:100%;height:100%}
+.idle .stage{cursor:none}
+
+.titlebar{
+  position:absolute;inset:0 0 auto 0;height:42px;display:flex;align-items:center;padding-left:14px;gap:10px;
+  background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent);transition:opacity .35s var(--ease);z-index:5;
+}
+.titlebar .app{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:12px;font-weight:600}
+.logo{width:16px;height:16px;border-radius:5px;background:linear-gradient(135deg,var(--clip),#ff6a3d)}
+.titlebar .name{position:absolute;left:50%;transform:translateX(-50%);font-size:12.5px;font-weight:600;white-space:nowrap;max-width:50%;overflow:hidden;text-overflow:ellipsis}
+.caption{margin-left:auto;display:flex;height:100%}
+.caption button{width:46px;height:100%;display:grid;place-items:center;color:var(--text-2)}
+.caption button:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.caption button.close:hover{background:#c42b1c;color:#fff}
+
+/* ---------- floating controller (player) ---------- */
+.osc{
+  position:absolute;left:50%;bottom:22px;transform:translateX(-50%);
+  width:min(600px,calc(100% - 32px));padding:10px 14px 12px;border-radius:18px;
+  background:var(--glass);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);
+  border:1px solid var(--stroke);box-shadow:0 14px 40px -10px rgba(0,0,0,.6);
+  transition:opacity .35s var(--ease),transform .45s var(--ease);z-index:6;
+}
+.osc-row{display:flex;align-items:center;gap:10px}
+.osc-left,.osc-right{flex:1;display:flex;align-items:center;gap:2px}
+.osc-right{justify-content:flex-end}
+.osc-mid{display:flex;align-items:center;gap:8px}
+.ib{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--text);opacity:.82;transition:background .15s,opacity .15s}
+.ib:hover{background:rgba(255,255,255,.09);opacity:1}
+.ib.big{width:44px;height:44px;border-radius:50%;opacity:1;background:rgba(255,255,255,.1)}
+.ib.big:hover{background:rgba(255,255,255,.18)}
+.ib.sm{width:30px;height:30px;border-radius:8px}
+.vol{width:72px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);position:relative;margin-left:4px}
+.vol i{position:absolute;inset:0 30% 0 0;background:var(--text);border-radius:2px}
+.seek-row{display:flex;align-items:center;gap:12px;margin-top:6px;font-size:11.5px;font-weight:600;color:var(--text-2)}
+.seek{flex:1;height:18px;position:relative;cursor:pointer;display:flex;align-items:center}
+.seek .track{position:absolute;left:0;right:0;height:4px;border-radius:2px;background:rgba(255,255,255,.16);transition:height .15s}
+.seek:hover .track{height:6px}
+.seek .buf{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.16);border-radius:2px}
+.seek .fill{position:absolute;left:0;top:0;bottom:0;background:var(--text);border-radius:2px}
+.seek .knob{position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;transform:translateX(-50%);box-shadow:0 1px 4px rgba(0,0,0,.5);opacity:0;transition:opacity .15s}
+.seek:hover .knob{opacity:1}
+.clipmark{position:absolute;top:50%;height:4px;transform:translateY(-50%);background:var(--clip);border-radius:2px;pointer-events:none}
+
+.preview{position:absolute;bottom:calc(100% + 10px);transform:translateX(-50%);pointer-events:none;opacity:0;transition:opacity .12s;z-index:20}
+.preview canvas{width:168px;height:94.5px;border-radius:9px;border:1px solid var(--stroke-2);box-shadow:0 8px 24px rgba(0,0,0,.6);display:block;background:#000}
+.preview b{display:block;width:max-content;margin:6px auto 0;padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.7);font-size:11px;font-weight:600;color:#fff}
+.preview.show{opacity:1}
+
+.osd{position:absolute;top:52px;left:18px;padding:7px 12px;border-radius:10px;background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--stroke);font-size:12.5px;font-weight:600;opacity:0;transition:opacity .25s;z-index:7;display:flex;gap:8px;align-items:center}
+.osd.show{opacity:1}
+.osd .dot{width:7px;height:7px;border-radius:50%;background:var(--clip)}
+.flash{position:absolute;left:50%;top:50%;width:72px;height:72px;margin:-36px 0 0 -36px;border-radius:50%;background:rgba(0,0,0,.45);backdrop-filter:blur(10px);display:grid;place-items:center;opacity:0;pointer-events:none;z-index:4}
+.flash.go{animation:flash .5s var(--ease)}
+@keyframes flash{0%{opacity:1;transform:scale(.8)}100%{opacity:0;transform:scale(1.25)}}
+.idle .titlebar,.idle .osc{opacity:0;pointer-events:none}
+
+/* ---------- clip dock ---------- */
+.dock{height:0;overflow:hidden;background:var(--panel);transition:height .45s var(--ease);box-shadow:0 -1px 0 var(--stroke)}
+.clip .dock{height:164px}
+.clip .osc{opacity:0;transform:translate(-50%,20px);pointer-events:none}
+.dock-inner{height:164px;padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px}
+
+.bar{display:flex;align-items:center;gap:6px;min-width:0;height:36px}
+.tc{display:flex;align-items:baseline;gap:6px;margin:0 8px 0 4px;white-space:nowrap}
+.tc b{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.tc span{font-size:12px;color:var(--text-3);font-weight:500}
+.spacer{flex:1}
+.div{width:1px;height:20px;background:var(--stroke-2);margin:0 4px}
+.tbtn{height:32px;padding:0 10px;border-radius:9px;display:inline-flex;align-items:center;gap:7px;color:var(--text);font-weight:600;font-size:12.5px;white-space:nowrap;opacity:.85;transition:background .15s,opacity .15s}
+.tbtn:hover{background:rgba(255,255,255,.08);opacity:1}
+.btn{height:32px;padding:0 14px;border-radius:9px;display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:12.5px;white-space:nowrap;border:1px solid var(--stroke-2);transition:filter .15s,background .15s}
+.btn:hover{background:rgba(255,255,255,.06)}
+.btn.primary{background:var(--clip);color:#1a1200;border-color:transparent}
+.btn.primary:hover{filter:brightness(1.08);background:var(--clip)}
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:rgba(255,255,255,.05)}
+.seg button{height:26px;padding:0 11px;border-radius:7px;color:var(--text-2);font-size:12px;font-weight:600;white-space:nowrap;transition:background .15s,color .15s}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:rgba(255,255,255,.13);color:var(--text)}
+.seg.full{display:flex}.seg.full button{flex:1}
+
+.meter{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 11px;border-radius:9px;background:rgba(255,255,255,.05);font-size:12px;font-weight:600;white-space:nowrap}
+.meter .g{width:46px;height:5px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+.meter .g i{display:block;height:100%;border-radius:3px;background:var(--ok);transition:width .25s var(--ease)}
+.meter.over .g i{background:var(--bad)}
+.meter.over b{color:var(--bad)}
+.meter span{color:var(--text-3);font-weight:500}
+
+/* timeline */
+.tl{position:relative;flex:1;min-height:0;cursor:pointer;user-select:none;touch-action:none}
+.tl .strip{position:absolute;left:0;right:0;top:0;height:54px;border-radius:10px;overflow:hidden;background:#000}
+.tl .strip canvas{position:absolute;inset:0;width:100%;height:100%}
+.dim{position:absolute;top:0;height:54px;background:rgba(10,10,12,.66);pointer-events:none}
+.dim.first{border-radius:10px 0 0 10px}.dim.last{border-radius:0 10px 10px 0}
+.snap{position:absolute;top:0;height:54px;pointer-events:none;background:repeating-linear-gradient(135deg,rgba(255,178,36,.5) 0 3px,transparent 3px 7px)}
+.sel{position:absolute;top:0;height:54px;border-radius:10px;box-shadow:inset 0 0 0 2px var(--clip);pointer-events:none}
+.sel.inactive{box-shadow:inset 0 0 0 2px rgba(255,255,255,.45)}
+.sel .h{position:absolute;top:0;bottom:0;width:12px;background:var(--clip);pointer-events:auto;cursor:ew-resize;display:grid;place-items:center}
+.sel .h::after{content:"";width:2px;height:18px;border-radius:1px;background:rgba(26,18,0,.6)}
+.sel .h.l{left:0;border-radius:10px 0 0 10px}
+.sel .h.r{right:0;border-radius:0 10px 10px 0}
+.sel.inactive .h{background:rgba(255,255,255,.45)}
+.sel.inactive .h::after{background:rgba(0,0,0,.4)}
+.sel .lbl{position:absolute;left:18px;bottom:6px;padding:1px 7px;border-radius:6px;background:rgba(0,0,0,.65);font-size:11px;font-weight:600;white-space:nowrap}
+.playhead{position:absolute;top:-6px;height:66px;width:2px;margin-left:-1px;background:#fff;border-radius:1px;pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.35);z-index:3}
+.playhead::before{content:"";position:absolute;top:-3px;left:-4px;width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+.hoverline{position:absolute;top:0;height:54px;width:1px;background:rgba(255,255,255,.55);pointer-events:none;opacity:0}
+.tl:hover .hoverline{opacity:1}
+.tl .axis{position:absolute;left:0;right:0;top:58px;height:16px;width:100%}
+.tl .preview{bottom:auto;top:-128px}
+
+.foot{display:flex;align-items:center;gap:8px;min-width:0;height:22px}
+.chips{display:flex;gap:6px;overflow:hidden}
+.chip{height:22px;padding:0 4px 0 9px;border-radius:6px;background:rgba(255,255,255,.05);display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--text-2);white-space:nowrap;cursor:pointer}
+.chip.on{background:var(--clip-soft);color:var(--clip)}
+.chip .x{width:16px;height:16px;border-radius:4px;display:grid;place-items:center;opacity:.6}
+.chip .x:hover{background:rgba(255,255,255,.12);opacity:1}
+.note{font-size:11.5px;color:var(--text-3);display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note.warn{color:var(--clip)}
+.note svg{flex:none}
+
+/* ---------- export sheet ---------- */
+.sheet{
+  position:absolute;top:10px;right:10px;bottom:10px;width:392px;max-width:calc(100% - 20px);
+  background:var(--glass-strong);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);
+  border:1px solid var(--stroke);border-radius:16px;box-shadow:-20px 0 60px -20px rgba(0,0,0,.7);
+  transform:translateX(calc(100% + 20px));transition:transform .45s var(--ease);z-index:20;display:flex;flex-direction:column;
+}
+.exporting .sheet{transform:none}
+.sheet-h{display:flex;align-items:center;padding:16px 12px 8px 18px;gap:8px}
+.sheet-h h2{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.sheet-h .sub{color:var(--text-3);font-size:12px}
+.sheet-b{flex:1;overflow:auto;padding:6px 18px 16px;display:flex;flex-direction:column;gap:18px}
+.sheet-b::-webkit-scrollbar{width:8px}.sheet-b::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
+.sec h3{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+.field label{font-size:12px;font-weight:600;color:var(--text-2);display:flex;justify-content:space-between;gap:8px}
+.field label em{font-style:normal;color:var(--text)}
+.inp{height:34px;border-radius:9px;border:1px solid var(--stroke-2);background:rgba(0,0,0,.25);padding:0 11px;width:100%;outline:none;font-weight:500}
+.inp:focus{border-color:var(--accent)}
+.inrow{display:flex;gap:8px}
+.suffix{display:flex;align-items:center;padding:0 12px;border-radius:9px;background:rgba(255,255,255,.05);color:var(--text-2);font-weight:600}
+select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23aaa' fill='none' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+select.inp option{background:#1c1c22}
+.presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.preset{height:52px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--stroke);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transition:border-color .15s,background .15s}
+.preset b{font-size:14px;font-weight:700}
+.preset small{font-size:10.5px;color:var(--text-3);font-weight:600}
+.preset:hover{border-color:var(--stroke-2)}
+.preset.on{border-color:var(--discord);background:rgba(88,101,242,.14)}
+.preset.on small{color:#aab2ff}
+.auto{border-radius:11px;background:rgba(255,255,255,.035);border:1px solid var(--stroke);padding:12px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.auto div small{display:block;font-size:10.5px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.auto div b{font-size:13.5px;font-weight:700}
+.auto .full{grid-column:1/-1;font-size:11.5px;color:var(--text-3);border-top:1px solid var(--stroke);padding-top:8px;display:flex;align-items:center;gap:6px}
+.auto .full svg{flex:none}
+.info{border-radius:10px;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid var(--stroke);font-size:12px;color:var(--text-2);display:flex;gap:10px;align-items:flex-start}
+.info svg{flex:none;margin-top:1px}
+.info b{color:var(--text);font-weight:600}
+.info.warn{border-color:rgba(255,92,92,.35);background:rgba(255,92,92,.07)}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;font-size:12.5px;font-weight:600}
+.tog small{display:block;color:var(--text-3);font-size:11.5px;font-weight:500}
+.sw{width:36px;height:21px;border-radius:11px;background:rgba(255,255,255,.16);position:relative;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:2.5px;left:2.5px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s var(--ease)}
+.sw.on{background:var(--accent)}
+.sw.on::after{transform:translateX(15px)}
+.range-in{width:100%;accent-color:var(--accent)}
+.scale{display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-3);margin-top:-2px}
+.gpu{display:inline-flex;align-items:center;gap:5px;color:var(--ok);font-size:11px;font-weight:700}
+.sheet-f{border-top:1px solid var(--stroke);padding:12px 14px 14px 18px;display:flex;align-items:center;gap:12px}
+.sheet-f .est{flex:1;font-size:11.5px;color:var(--text-3)}
+.sheet-f .est b{font-size:14px;font-weight:700;display:block;color:var(--text)}
+.sheet-f .est b.over{color:var(--bad)}
+.sheet-f .btn{height:38px;padding:0 18px;font-size:13px}
+.hide{display:none!important}
+
+/* ---------- job card ---------- */
+.job{
+  position:absolute;left:16px;bottom:16px;width:350px;padding:10px;border-radius:14px;
+  background:var(--glass-strong);backdrop-filter:blur(26px);border:1px solid var(--stroke);box-shadow:0 12px 40px -10px rgba(0,0,0,.7);
+  transform:translateY(20px);opacity:0;pointer-events:none;transition:all .4s var(--ease);z-index:15;
+}
+.job.show{transform:none;opacity:1;pointer-events:auto}
+.job .top{display:flex;gap:10px;align-items:center}
+.job canvas{width:76px;height:42.75px;border-radius:7px;flex:none;background:#000;cursor:grab}
+.job .meta{flex:1;min-width:0}
+.job .t1{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job .t2{font-size:11.5px;color:var(--text-2);display:flex;gap:5px;overflow:hidden;align-items:center;margin-top:2px;white-space:nowrap}
+.job .t2 svg{flex:none}
+.pbar{height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin-top:7px;overflow:hidden}
+.pbar i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px;transition:width .2s linear}
+.pbar.done i{background:var(--ok)}
+.job .acts{display:flex;gap:6px;margin-top:10px}
+.job .acts .btn{height:30px;flex:1;justify-content:center;font-size:12px}
+
+/* ---------- settings ---------- */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .3s;z-index:30;display:grid;place-items:center;padding:20px}
+.settings-open .scrim{opacity:1;pointer-events:auto}
+.modal{width:min(760px,100%);height:min(500px,100%);border-radius:18px;overflow:hidden;display:grid;grid-template-columns:190px 1fr;
+  background:var(--glass-strong);backdrop-filter:blur(40px) saturate(160%);border:1px solid var(--stroke);box-shadow:0 30px 80px -10px rgba(0,0,0,.8);
+  transform:scale(.97);transition:transform .35s var(--ease)}
+.settings-open .modal{transform:none}
+.nav{background:rgba(0,0,0,.22);border-right:1px solid var(--stroke);padding:16px 8px;display:flex;flex-direction:column;gap:2px}
+.nav .ttl{font-size:16px;font-weight:700;padding:2px 10px 14px;letter-spacing:-.01em}
+.nav button{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:9px;color:var(--text-2);font-weight:600;text-align:left}
+.nav button:hover{background:rgba(255,255,255,.05)}
+.nav button.on{background:rgba(255,255,255,.1);color:var(--text)}
+.pane{padding:18px 22px;overflow:auto;position:relative}
+.pane h2{font-size:17px;font-weight:700;margin-bottom:14px;letter-spacing:-.01em}
+.pane .closex{position:absolute;top:12px;right:12px}
+.group{border:1px solid var(--stroke);border-radius:12px;background:rgba(255,255,255,.025);margin-bottom:14px}
+.group .row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--stroke);font-size:12.5px;font-weight:600}
+.group .row:first-child{border-top:0}
+.group .row .l{flex:1}.group .row .l small{display:block;color:var(--text-3);font-size:11.5px;font-weight:500}
+.group .row .inp{width:auto;min-width:180px}
+.kbdtable{display:grid;grid-template-columns:1fr auto;gap:10px 20px;font-size:12.5px;color:var(--text-2);font-weight:500}
+.kbdtable span:nth-child(even){text-align:right}
+
+/* ---------- themed dropdown ---------- */
+.dd{height:34px;border-radius:9px;border:1px solid var(--stroke-2);background:rgba(0,0,0,.25);padding:0 9px 0 11px;width:100%;display:flex;align-items:center;gap:8px;font-weight:500;text-align:left;transition:border-color .15s,background .15s,box-shadow .15s}
+.dd:hover{border-color:rgba(255,255,255,.24);background:rgba(255,255,255,.04)}
+.dd.open,.dd:focus-visible{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px rgba(91,140,255,.2)}
+.dd .v{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd .chev{flex:none;opacity:.55;transition:transform .2s var(--ease)}
+.dd.open .chev{transform:rotate(180deg);opacity:1}
+.group .row .dd{width:210px;flex:none}
+.menu{position:fixed;z-index:1000;max-height:320px;overflow:auto;padding:5px;border-radius:12px;
+  background:rgba(28,28,34,.97);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);
+  border:1px solid var(--stroke-2);box-shadow:0 18px 50px -10px rgba(0,0,0,.85);
+  font:500 12.5px/1.35 var(--font);color:var(--text);opacity:0;transform:translateY(-4px) scale(.98);transform-origin:top center;transition:opacity .14s,transform .18s var(--ease)}
+.menu.up{transform-origin:bottom center;transform:translateY(4px) scale(.98)}
+.menu.show{opacity:1;transform:none}
+.menu .grp{padding:8px 9px 4px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.menu .grp:not(:first-child){margin-top:4px;border-top:1px solid var(--stroke)}
+.menu .it{display:flex;align-items:center;gap:9px;padding:7px 10px 7px 8px;border-radius:8px;cursor:pointer}
+.menu .it .ck{width:16px;flex:none;color:var(--accent);display:grid;place-items:center}
+.menu .it .tx{flex:1;min-width:0}
+.menu .it small{display:block;color:var(--text-3);font-size:11px;font-weight:500;margin-top:1px}
+.menu .it.act{background:rgba(255,255,255,.08)}
+.menu .it.sel{font-weight:600}
+.menu .it.dis{opacity:.35;cursor:default}
+.menu::-webkit-scrollbar{width:8px}.menu::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+
+/* ---------- advanced export ---------- */
+.adv-h{width:100%;display:flex;align-items:center;gap:9px;padding:0 12px;height:40px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--stroke);font-weight:600;font-size:12.5px;transition:background .15s}
+.adv-h:hover{background:rgba(255,255,255,.07)}
+.adv-h .tag{margin-left:auto;font-size:11px;color:var(--text-3);font-weight:600}
+.adv-h .tag.changed{color:var(--clip)}
+.adv-h .chev{transition:transform .2s var(--ease);opacity:.6}
+.adv.open .adv-h .chev{transform:rotate(180deg)}
+.adv-b{display:none}
+.adv.open .adv-b{display:block}
+.sub-h{display:flex;align-items:center;gap:8px;margin:18px 0 10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.sub-h::after{content:"";flex:1;height:1px;background:var(--stroke)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 8px}
+.grid2 .field{margin:0;min-width:0}
+.tracks{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.trk{display:flex;align-items:center;gap:10px;padding:0 11px;height:36px;border-radius:9px;border:1px solid var(--stroke);background:rgba(255,255,255,.03);font-size:12.5px;font-weight:600;text-align:left;width:100%;transition:border-color .15s,background .15s}
+.trk:hover{border-color:var(--stroke-2)}
+.trk .cb{width:16px;height:16px;border-radius:5px;border:1.5px solid rgba(255,255,255,.3);display:grid;place-items:center;flex:none;color:#fff}
+.trk.on{background:rgba(91,140,255,.08);border-color:rgba(91,140,255,.35)}
+.trk.on .cb{background:var(--accent);border-color:var(--accent)}
+.trk small{color:var(--text-3);font-weight:500;margin-left:auto;font-size:11px}
+.cmd-h{display:flex;align-items:center;justify-content:space-between;margin:12px 0 6px;font-size:12px;font-weight:600;color:var(--text-2)}
+.linkbtn{font-size:11.5px;font-weight:600;color:var(--accent);display:inline-flex;gap:5px;align-items:center}
+.linkbtn:hover{text-decoration:underline}
+.cmd{border-radius:10px;background:#0a0a0d;border:1px solid var(--stroke);padding:10px 12px;font:500 10.5px/1.65 "Cascadia Code","Cascadia Mono",Consolas,ui-monospace,monospace;color:var(--text-2);white-space:pre-wrap;word-break:break-word;max-height:240px;overflow:auto}
+.cmd .f{color:#8fb3ff;white-space:nowrap}.cmd .q{color:#ffcf7a}.cmd .b{color:#fff;font-weight:600}
+.resetrow{display:flex;justify-content:flex-end;margin-top:8px}
+
+@media (max-width:820px){
+  .sheet{width:calc(100% - 20px)}
+  .modal{grid-template-columns:1fr}.nav{display:none}
+  .bar .tbtn span.t,.note,.meter span{display:none}
+  .win{aspect-ratio:3/4}
+}
+</style>
+</head>
+<body>
+
+<div class="states" id="states">
+  <span>Mockup state</span>
+  <button data-s="player" class="on">Player</button>
+  <button data-s="clip">Clip mode</button>
+  <button data-s="export">Export sheet</button>
+  <button data-s="advanced">Advanced</button>
+  <button data-s="job">Encode → Discord</button>
+  <button data-s="settings">Settings</button>
+</div>
+
+<div class="win" id="win">
+  <div class="stage" id="stage">
+    <canvas id="video"></canvas>
+    <div class="flash" id="flash"></div>
+
+    <div class="titlebar">
+      <div class="app"><div class="logo"></div>Cliper</div>
+      <div class="name">Ranked_Match_2026-11-03_21-14.mkv</div>
+      <div class="caption">
+        <button title="Minimize"><svg width="10" height="10"><path d="M0 5h10" stroke="currentColor" stroke-width="1.2"/></svg></button>
+        <button title="Maximize"><svg width="10" height="10"><rect x=".6" y=".6" width="8.8" height="8.8" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg></button>
+        <button class="close" title="Close"><svg width="10" height="10"><path d="M.5 .5l9 9M9.5 .5l-9 9" stroke="currentColor" stroke-width="1.2"/></svg></button>
+      </div>
+    </div>
+
+    <div class="osd" id="osd"><span class="dot"></span><span id="osdtxt"></span></div>
+
+    <div class="osc" id="osc">
+      <div class="osc-row">
+        <div class="osc-left">
+          <button class="ib" title="Mute (M)"><span data-i="vol" data-s="20"></span></button>
+          <div class="vol"><i></i></div>
+        </div>
+        <div class="osc-mid">
+          <button class="ib" title="Back 5 s (←)" data-act="back"><span data-i="rew" data-s="20"></span></button>
+          <button class="ib big" title="Play / Pause (Space)" data-act="toggle"><span class="pp" data-i="play" data-s="22"></span></button>
+          <button class="ib" title="Forward 5 s (→)" data-act="fwd"><span data-i="ff" data-s="20"></span></button>
+        </div>
+        <div class="osc-right">
+          <button class="ib" title="Clip (C)" data-act="clip"><span data-i="scissors" data-s="20"></span></button>
+          <button class="ib" title="Audio &amp; subtitles"><span data-i="cc" data-s="20"></span></button>
+          <button class="ib" title="Settings" data-act="settings"><span data-i="gear" data-s="20"></span></button>
+          <button class="ib" title="Fullscreen (F)"><span data-i="full" data-s="20"></span></button>
+        </div>
+      </div>
+      <div class="seek-row num">
+        <span id="tcur">0:00</span>
+        <div class="seek" id="seek">
+          <div class="track"><div class="buf" style="width:72%"></div><div class="fill" id="sfill"></div></div>
+          <div id="smarks"></div>
+          <div class="knob" id="sknob"></div>
+          <div class="preview" id="spv"><canvas width="336" height="189"></canvas><b class="num"></b></div>
+        </div>
+        <span id="trem">-0:00</span>
+      </div>
+    </div>
+
+    <!-- export sheet -->
+    <aside class="sheet" id="sheet">
+      <div class="sheet-h">
+        <div><h2>Export</h2><div class="sub num" id="shsub"></div></div>
+        <div class="spacer"></div>
+        <button class="ib sm" data-act="closeexport" title="Close (Esc)"><span data-i="x" data-s="18"></span></button>
+      </div>
+      <div class="sheet-b">
+        <div class="sec">
+          <div class="field">
+            <label>File name</label>
+            <div class="inrow"><input class="inp" value="Ranked_Match_clip01"><span class="suffix">.mp4</span></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <h3>Mode</h3>
+          <div class="seg full" id="msheet">
+            <button data-m="size">Fit to size</button>
+            <button data-m="quality">Best quality</button>
+            <button data-m="lossless">Lossless</button>
+          </div>
+        </div>
+
+        <div class="sec" id="p-size">
+          <h3>Size limit</h3>
+          <div class="presets" id="presets">
+            <button class="preset" data-mb="10"><b>10 MB</b><small>Discord</small></button>
+            <button class="preset on" data-mb="20"><b>20 MB</b><small>Discord</small></button>
+            <button class="preset" data-mb="50"><b>50 MB</b><small>Nitro Basic</small></button>
+            <button class="preset" data-mb="500"><b>500 MB</b><small>Nitro</small></button>
+          </div>
+          <div style="height:12px"></div>
+          <div class="auto num" id="autobox"></div>
+        </div>
+
+        <div class="sec hide" id="p-quality">
+          <div class="field">
+            <label>Quality <em id="qlbl"></em></label>
+            <input type="range" class="range-in" id="q" min="0" max="100" value="68">
+            <div class="scale"><span>Smaller</span><span>Balanced</span><span>Visually lossless</span></div>
+          </div>
+          <div class="inrow">
+            <div class="field" style="flex:1;min-width:0"><label>Resolution</label><select class="inp" id="q-res"><option value="1440" data-d="2560 × 1440">Source · 1440p</option><option value="1080">1080p</option><option value="720">720p</option><option value="480">480p</option></select></div>
+            <div class="field" style="flex:1;min-width:0"><label>Frame rate</label><select class="inp" id="q-fps"><option value="144" data-d="No frame-rate conversion">Source · 144</option><option value="120">120</option><option value="60">60</option><option value="30">30</option></select></div>
+          </div>
+        </div>
+
+        <div class="sec hide" id="p-lossless">
+          <div class="info" id="lossinfo"></div>
+          <div class="tog"><div>Smart cut<small>Re-encodes only up to the first keyframe, so the start is frame-accurate</small></div><button class="sw" id="smart"></button></div>
+        </div>
+
+        <div class="sec" id="p-enc">
+          <h3>Encoder</h3>
+          <div class="field">
+            <label>Codec <span class="gpu"><span data-i="bolt" data-s="12"></span>NVENC · RTX 4060 Ti</span></label>
+            <div class="seg full" id="codec">
+              <button data-c="h264" class="on">H.264</button><button data-c="hevc">HEVC</button><button data-c="av1">AV1</button>
+            </div>
+          </div>
+          <div class="note" id="codecnote" style="white-space:normal;align-items:flex-start"></div>
+        </div>
+
+        <div class="sec adv" id="adv">
+          <button class="adv-h" id="advh"><span data-i="tune" data-s="16"></span>Advanced<span class="tag" id="advtag">Defaults</span><span class="chev" data-i="chev" data-s="16"></span></button>
+          <div class="adv-b">
+            <div class="inrow" style="margin-top:12px">
+              <select class="inp" id="a-bank" style="flex:1">
+                <optgroup label="Built-in">
+                  <option data-d="Fit to size, P6, full-res multipass">Discord · balanced</option>
+                  <option data-d="P7, 32-frame lookahead, slower">Discord · max quality</option>
+                  <option data-d="HEVC 10-bit, constant quality 20">Archive · HEVC 10-bit</option>
+                </optgroup>
+                <optgroup label="Saved">
+                  <option data-d="1080p60 · 128k Opus · mic mixed">Valorant 1080p60</option>
+                </optgroup>
+              </select>
+              <button class="btn">Save preset</button>
+            </div>
+
+            <div id="adv-video">
+              <div class="sub-h">Rate control</div>
+              <div class="grid2">
+                <div class="field"><label>Mode</label><select class="inp" id="a-rc">
+                  <option value="vbr" data-d="Target bitrate with capped peaks. Best for size limits">VBR</option>
+                  <option value="cbr" data-d="Flat bitrate. Predictable, less efficient">CBR</option>
+                  <option value="cq" data-d="Constant quality. Size varies">Constant quality</option>
+                  <option value="qp" data-d="Fixed quantizer per frame type">Constant QP</option></select></div>
+                <div class="field"><label>Peak bitrate</label><select class="inp" id="a-max">
+                  <option value="1.15" data-d="Recommended">Target +15%</option><option value="1.3">Target +30%</option><option value="1.5">Target +50%</option><option value="1">Same as target</option></select></div>
+                <div class="field"><label>Multipass</label><select class="inp" id="a-mp">
+                  <option value="disabled" data-d="Fastest, least accurate">Off</option>
+                  <option value="qres" data-d="First pass at ¼ resolution">Quarter res</option>
+                  <option value="fullres" selected data-d="Best bitrate distribution">Full res</option></select></div>
+                <div class="field"><label>Lookahead</label><select class="inp" id="a-la">
+                  <option value="0">Off</option><option value="8">8 frames</option><option value="20" selected data-d="Recommended">20 frames</option><option value="32" data-d="Slower, better scene cuts">32 frames</option></select></div>
+              </div>
+
+              <div class="sub-h">Encoder</div>
+              <div class="grid2">
+                <div class="field"><label>Preset</label><select class="inp" id="a-preset">
+                  <option value="p1" data-d="Fastest, lowest quality">P1 · Fastest</option><option value="p2">P2 · Faster</option><option value="p3">P3 · Fast</option>
+                  <option value="p4" data-d="NVENC default">P4 · Medium</option><option value="p5">P5 · Slow</option>
+                  <option value="p6" selected data-d="Recommended for clips">P6 · Slower</option><option value="p7" data-d="Best quality, ~2× slower than P4">P7 · Slowest</option></select></div>
+                <div class="field"><label>Tune</label><select class="inp" id="a-tune">
+                  <option value="hq" data-d="For recordings and uploads">High quality</option>
+                  <option value="ll" data-d="For streaming">Low latency</option>
+                  <option value="ull">Ultra-low latency</option>
+                  <option value="lossless" data-d="Huge files">Lossless</option></select></div>
+                <div class="field"><label>Profile</label><select class="inp" id="a-prof"></select></div>
+                <div class="field"><label>Bit depth</label><select class="inp" id="a-depth">
+                  <option value="8" data-d="yuv420p · plays everywhere">8-bit</option>
+                  <option value="10" data-d="p010 · less banding">10-bit</option></select></div>
+                <div class="field"><label>B-frames</label><select class="inp" id="a-bf">
+                  <option value="0">None</option><option value="1">1</option><option value="2">2</option><option value="3" selected data-d="Recommended">3</option><option value="4">4</option></select></div>
+                <div class="field"><label>B-frame refs</label><select class="inp" id="a-bref">
+                  <option value="middle" data-d="Recommended">Middle</option><option value="each">Each</option><option value="disabled">Off</option></select></div>
+                <div class="field"><label>Keyframe every</label><select class="inp" id="a-gop">
+                  <option value="1">1 second</option><option value="2" selected data-d="Good seeking in Discord">2 seconds</option><option value="5">5 seconds</option><option value="10" data-d="Smallest files">10 seconds</option></select></div>
+                <div class="field"><label>Ref frames</label><select class="inp" id="a-refs">
+                  <option value="auto">Auto</option><option value="2">2</option><option value="4">4</option><option value="6">6</option></select></div>
+              </div>
+              <div style="height:6px"></div>
+              <div class="tog"><div>Spatial AQ<small>Gives more bits to flat areas like skies and walls</small></div><button class="sw on" id="t-saq"></button></div>
+              <div class="field" id="aqrow" style="margin:2px 0 6px"><label>AQ strength <em id="aqv">8</em></label><input type="range" class="range-in" id="a-aqs" min="1" max="15" value="8"></div>
+              <div class="tog"><div>Temporal AQ<small>Sharper static HUD and UI elements</small></div><button class="sw on" id="t-taq"></button></div>
+              <div class="tog"><div>Weighted prediction<small>Helps with fades and flashes. Turns off B-frames</small></div><button class="sw" id="t-wp"></button></div>
+
+              <div class="sub-h">Picture</div>
+              <div class="grid2">
+                <div class="field"><label>Scaling</label><select class="inp" id="a-scale">
+                  <option value="lanczos" data-d="Sharpest">Lanczos</option><option value="bicubic">Bicubic</option><option value="bilinear">Bilinear</option><option value="nearest" data-d="Pixel art">Nearest</option></select></div>
+                <div class="field"><label>Crop</label><select class="inp" id="a-crop">
+                  <option value="src">Source</option><option value="916" data-d="Centered, for phones">9:16 vertical</option><option value="11">1:1 square</option><option value="43">4:3</option><option value="219" data-d="Ultrawide">21:9</option></select></div>
+                <div class="field"><label>HDR</label><select class="inp" id="a-hdr">
+                  <option value="keep" data-d="Source is SDR">Keep source</option><option value="tonemap" data-d="BT.2390, for HDR captures">Tone map to SDR</option></select></div>
+                <div class="field"><label>Color range</label><select class="inp" id="a-range">
+                  <option value="auto">Auto</option><option value="tv" data-d="16–235, standard">Limited</option><option value="pc" data-d="0–255">Full</option></select></div>
+                <div class="field"><label>Frame timing</label><select class="inp" id="a-vsync">
+                  <option value="cfr" data-d="Smooth playback in Discord">Constant</option><option value="vfr" data-d="Keep source timestamps">Variable</option></select></div>
+                <div class="field"><label>Sharpen</label><select class="inp" id="a-sharp">
+                  <option value="0">Off</option><option value="0.3">Light</option><option value="0.6">Medium</option><option value="1">Strong</option></select></div>
+              </div>
+            </div>
+
+            <div class="sub-h">Audio</div>
+            <div class="tracks" id="tracks">
+              <button class="trk on" data-t="0"><span class="cb"></span>Track 1 · Game<small>AAC · 5.1 · 48 kHz</small></button>
+              <button class="trk on" data-t="1"><span class="cb"></span>Track 2 · Microphone<small>AAC · mono</small></button>
+              <button class="trk" data-t="2"><span class="cb"></span>Track 3 · Discord voice<small>AAC · stereo</small></button>
+            </div>
+            <div class="tog"><div>Mix selected tracks into one<small>Discord only plays the first audio track</small></div><button class="sw on" id="t-mix"></button></div>
+            <div style="height:6px"></div>
+            <div class="grid2">
+              <div class="field"><label>Codec</label><select class="inp" id="a-ac">
+                <option value="aac" data-d="Plays everywhere">AAC</option><option value="libopus" data-d="Better at low bitrates">Opus</option><option value="copy">Copy source</option><option value="none">No audio</option></select></div>
+              <div class="field"><label>Bitrate</label><select class="inp" id="a-ab">
+                <option value="96">96 kbps</option><option value="128" selected data-d="Recommended">128 kbps</option><option value="160">160 kbps</option><option value="192">192 kbps</option><option value="256">256 kbps</option><option value="320">320 kbps</option></select></div>
+              <div class="field"><label>Channels</label><select class="inp" id="a-ch">
+                <option value="2">Stereo</option><option value="1">Mono</option><option value="src">Source</option></select></div>
+              <div class="field"><label>Sample rate</label><select class="inp" id="a-sr">
+                <option value="48000">48 kHz</option><option value="44100">44.1 kHz</option></select></div>
+              <div class="field"><label>Game volume</label><select class="inp" id="a-gv">
+                <option value="0">Unchanged</option><option value="-3">−3 dB</option><option value="-6">−6 dB</option><option value="3">+3 dB</option></select></div>
+              <div class="field"><label>Mic volume</label><select class="inp" id="a-mv">
+                <option value="0">Unchanged</option><option value="3">+3 dB</option><option value="6">+6 dB</option><option value="-3">−3 dB</option></select></div>
+            </div>
+            <div style="height:6px"></div>
+            <div class="tog"><div>Normalize loudness<small>EBU R128, −14 LUFS, so clips aren't too loud</small></div><button class="sw" id="t-loud"></button></div>
+
+            <div class="sub-h">Output</div>
+            <div class="tog"><div>Fast start<small>Starts playing before the file has fully loaded</small></div><button class="sw on" id="t-fast"></button></div>
+            <div class="tog"><div>Keep metadata<small>Title, recording date, encoder tags</small></div><button class="sw" id="t-meta"></button></div>
+            <div class="tog"><div>Hardware decoding<small>Decodes on NVDEC and keeps frames on the GPU</small></div><button class="sw on" id="t-hw"></button></div>
+
+            <div class="sub-h">FFmpeg</div>
+            <div class="field"><label>Extra arguments</label><input class="inp" id="x-args" placeholder="e.g. -highbitdepth 1" style="font-family:'Cascadia Code',Consolas,monospace;font-size:12px"></div>
+            <div class="cmd-h"><span>Command</span><button class="linkbtn" id="cpcmd"><span data-i="copy" data-s="12"></span>Copy</button></div>
+            <pre class="cmd" id="cmd"></pre>
+            <div class="resetrow"><button class="linkbtn" id="advreset">Reset to defaults</button></div>
+          </div>
+        </div>
+
+        <div class="sec" id="multi">
+          <h3>Segments</h3>
+          <div class="seg full"><button class="on">Merge into one file</button><button>Separate files</button></div>
+        </div>
+
+        <div class="sec">
+          <h3>After export</h3>
+          <div class="tog"><div>Copy file to clipboard<small>Then just press Ctrl+V in Discord</small></div><button class="sw on"></button></div>
+          <div class="tog"><div>Show in Explorer</div><button class="sw"></button></div>
+        </div>
+      </div>
+      <div class="sheet-f">
+        <div class="est num" id="est"></div>
+        <button class="btn primary" data-act="doexport"><span data-i="export" data-s="16"></span>Export</button>
+      </div>
+    </aside>
+
+    <div class="job" id="job">
+      <div class="top">
+        <canvas width="152" height="86" title="Drag into Discord"></canvas>
+        <div class="meta">
+          <div class="t1">Ranked_Match_clip01.mp4</div>
+          <div class="t2 num" id="jobt2"></div>
+          <div class="pbar" id="jobbar"><i></i></div>
+        </div>
+        <button class="ib sm" data-act="closejob"><span data-i="x" data-s="16"></span></button>
+      </div>
+      <div class="acts hide" id="jobacts">
+        <button class="btn"><span data-i="copy" data-s="15"></span>Copy again</button>
+        <button class="btn"><span data-i="folder" data-s="15"></span>Show in folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- clip dock -->
+  <div class="dock">
+    <div class="dock-inner">
+      <div class="bar">
+        <button class="ib sm" title="Previous frame (,)" data-act="pf"><span data-i="stepb" data-s="18"></span></button>
+        <button class="ib sm" title="Play / Pause (Space)" data-act="toggle"><span class="pp" data-i="play" data-s="18"></span></button>
+        <button class="ib sm" title="Next frame (.)" data-act="nf"><span data-i="stepf" data-s="18"></span></button>
+        <div class="tc num"><b id="tltime">00:00.00</b><span id="tldur"></span></div>
+        <div class="spacer"></div>
+        <button class="tbtn" data-act="in" title="Set in (I)"><span data-i="in" data-s="18"></span><span class="t">In</span></button>
+        <button class="tbtn" data-act="out" title="Set out (O)"><span data-i="out" data-s="18"></span><span class="t">Out</span></button>
+        <button class="tbtn" data-act="newseg" title="New segment (N)"><span data-i="plus" data-s="18"></span><span class="t">Segment</span></button>
+        <div class="div"></div>
+        <div class="seg" id="mdock">
+          <button data-m="size" id="mdsize">20 MB</button>
+          <button data-m="quality">Quality</button>
+          <button data-m="lossless">Lossless</button>
+        </div>
+        <div class="meter num" id="meter"><div class="g"><i></i></div><b></b><span></span></div>
+        <button class="btn primary" data-act="export"><span data-i="export" data-s="16"></span>Export</button>
+        <button class="ib sm" title="Close clip mode (Esc)" data-act="clip"><span data-i="x" data-s="18"></span></button>
+      </div>
+
+      <div class="tl" id="tl">
+        <div class="strip"><canvas id="strip"></canvas></div>
+        <div id="ranges"></div>
+        <div class="hoverline" id="hl"></div>
+        <div class="playhead" id="ph"></div>
+        <canvas class="axis" id="axis"></canvas>
+        <div class="preview" id="tpv"><canvas width="336" height="189"></canvas><b class="num"></b></div>
+      </div>
+
+      <div class="foot">
+        <div class="chips num" id="chips"></div>
+        <div class="spacer"></div>
+        <div class="note num" id="note"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- settings -->
+  <div class="scrim" id="scrim">
+    <div class="modal">
+      <nav class="nav" id="nav">
+        <div class="ttl">Settings</div>
+        <button data-p="general" class="on"><span data-i="gear" data-s="16"></span>General</button>
+        <button data-p="export"><span data-i="export" data-s="16"></span>Export</button>
+        <button data-p="gpu"><span data-i="bolt" data-s="16"></span>GPU</button>
+        <button data-p="keys"><span data-i="kbd" data-s="16"></span>Shortcuts</button>
+      </nav>
+      <div class="pane">
+        <button class="ib sm closex" data-act="settings"><span data-i="x" data-s="18"></span></button>
+
+        <section data-pane="general">
+          <h2>General</h2>
+          <div class="group">
+            <div class="row"><div class="l">Default video player<small>Windows asks you to confirm in Settings → Default apps</small></div><button class="btn">Make default…</button></div>
+            <div class="row"><div class="l">Hardware decoding</div><select class="inp"><option>Auto (D3D11)</option><option>NVDEC</option><option>Off</option></select></div>
+            <div class="row"><div class="l">Resume where I left off</div><button class="sw on"></button></div>
+            <div class="row"><div class="l">Open files in the running window</div><button class="sw on"></button></div>
+            <div class="row"><div class="l">Hide controls after</div><select class="inp"><option>2 seconds</option><option>4 seconds</option><option>Never</option></select></div>
+          </div>
+        </section>
+
+        <section data-pane="export" class="hide">
+          <h2>Export</h2>
+          <div class="group">
+            <div class="row"><div class="l">Default mode</div><div class="seg"><button class="on">Fit to size</button><button>Quality</button><button>Lossless</button></div></div>
+            <div class="row"><div class="l">Default size limit<small>Shown as the first option on the clip toolbar</small></div><select class="inp"><option>20 MB · Discord</option><option>10 MB · Discord</option><option>50 MB · Nitro Basic</option><option>500 MB · Nitro</option><option>Custom…</option></select></div>
+            <div class="row"><div class="l">Default codec</div><div class="seg"><button class="on">H.264</button><button>HEVC</button><button>AV1</button></div></div>
+            <div class="row"><div class="l">Multiple segments</div><select class="inp"><option>Ask each time</option><option>Merge into one file</option><option>Separate files</option></select></div>
+          </div>
+          <div class="group">
+            <div class="row"><div class="l">Output folder</div><input class="inp" value="D:\Videos\Clips"></div>
+            <div class="row"><div class="l">File name<small>{name} {n} {date} {time}</small></div><input class="inp" value="{name}_clip{n}"></div>
+            <div class="row"><div class="l">Copy file to clipboard after export</div><button class="sw on"></button></div>
+            <div class="row"><div class="l">Show advanced options by default<small>Expands Advanced in the export sheet</small></div><button class="sw"></button></div>
+            <div class="row"><div class="l">Show FFmpeg command<small>Shows the exact command in the Advanced section</small></div><button class="sw on"></button></div>
+          </div>
+        </section>
+
+        <section data-pane="gpu" class="hide">
+          <h2>GPU</h2>
+          <div class="group">
+            <div class="row"><div class="l">NVIDIA GeForce RTX 4060 Ti<small>NVENC (8th gen) · H.264 · HEVC · AV1 · NVDEC</small></div><span class="gpu"><span data-i="check" data-s="13"></span>Ready</span></div>
+            <div class="row"><div class="l">Software fallback<small>x264 · x265 · SVT-AV1</small></div><span class="gpu" style="color:var(--text-3)">Available</span></div>
+            <div class="row"><div class="l">Re-scan hardware</div><button class="btn">Scan</button></div>
+          </div>
+          <div class="group">
+            <div class="row"><div class="l">Keep the whole pipeline on the GPU<small>Decode, scale and encode on the GPU (CUDA). The fastest option</small></div><button class="sw on"></button></div>
+            <div class="row"><div class="l">Speed preset</div><div class="seg"><button>Fast</button><button class="on">Balanced</button><button>Quality</button></div></div>
+          </div>
+        </section>
+
+        <section data-pane="keys" class="hide">
+          <h2>Shortcuts</h2>
+          <div class="kbdtable">
+            <span>Play / pause</span><span><kbd>Space</kbd></span>
+            <span>Clip mode</span><span><kbd>C</kbd></span>
+            <span>Set in / out</span><span><kbd>I</kbd> <kbd>O</kbd></span>
+            <span>Previous / next frame</span><span><kbd>,</kbd> <kbd>.</kbd></span>
+            <span>Seek ±5 s</span><span><kbd>←</kbd> <kbd>→</kbd></span>
+            <span>New segment</span><span><kbd>N</kbd></span>
+            <span>Export</span><span><kbd>E</kbd></span>
+            <span>Quick export with last settings</span><span><kbd>Ctrl</kbd> <kbd>E</kbd></span>
+            <span>Close panel / exit clip mode</span><span><kbd>Esc</kbd></span>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="hint"><kbd>Space</kbd> play · <kbd>C</kbd> clip · <kbd>I</kbd> <kbd>O</kbd> in / out · <kbd>,</kbd> <kbd>.</kbd> frame step · <kbd>N</kbd> segment · <kbd>E</kbd> export · drag the handles on the timeline</div>
+
+<script>
+/* ---------- icons: bold, mostly solid, rounded ---------- */
+const P={
+  play:'<path d="M7.5 4.6c0-1.1 1.2-1.8 2.2-1.2l10.3 6.9c.9.6.9 1.9 0 2.5L9.7 19.6c-1 .6-2.2-.1-2.2-1.2z" fill="currentColor" stroke="none"/>',
+  pause:'<rect x="5.5" y="4" width="4.6" height="16" rx="1.6" fill="currentColor" stroke="none"/><rect x="13.9" y="4" width="4.6" height="16" rx="1.6" fill="currentColor" stroke="none"/>',
+  rew:'<path d="M11 6.2v11.6c0 .9-1 1.4-1.7.8L2.6 13c-.6-.5-.6-1.5 0-2l6.7-5.6c.7-.6 1.7-.1 1.7.8zM21.5 6.2v11.6c0 .9-1 1.4-1.7.8L13.1 13c-.6-.5-.6-1.5 0-2l6.7-5.6c.7-.6 1.7-.1 1.7.8z" fill="currentColor" stroke="none"/>',
+  ff:'<path d="M13 6.2v11.6c0 .9 1 1.4 1.7.8l6.7-5.6c.6-.5.6-1.5 0-2l-6.7-5.6c-.7-.6-1.7-.1-1.7.8zM2.5 6.2v11.6c0 .9 1 1.4 1.7.8l6.7-5.6c.6-.5.6-1.5 0-2L4.2 5.4c-.7-.6-1.7-.1-1.7.8z" fill="currentColor" stroke="none"/>',
+  stepb:'<path d="M19 6.3v11.4c0 1-1.1 1.6-1.9 1L9.4 13.1c-.7-.5-.7-1.6 0-2.1l7.7-5.7c.8-.6 1.9 0 1.9 1z" fill="currentColor" stroke="none"/><path d="M5.5 5.5v13"/>',
+  stepf:'<path d="M5 6.3v11.4c0 1 1.1 1.6 1.9 1l7.7-5.7c.7-.5.7-1.6 0-2.1L6.9 5.3C6.1 4.7 5 5.3 5 6.3z" fill="currentColor" stroke="none"/><path d="M18.5 5.5v13"/>',
+  vol:'<path d="M3 9.5v5c0 .6.4 1 1 1h3l4.4 3.9c.6.5 1.6.1 1.6-.8V5.4c0-.8-1-1.3-1.6-.7L7 8.5H4c-.6 0-1 .4-1 1z" fill="currentColor" stroke="none"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19.5 5.5a9.5 9.5 0 0 1 0 13"/>',
+  scissors:'<circle cx="6" cy="6.5" r="3"/><circle cx="6" cy="17.5" r="3"/><path d="M20 4.5 8.4 15.2M14.6 13.4 20 19.5M8.4 8.8 11.6 11.6"/>',
+  cc:'<rect x="2.5" y="4.5" width="19" height="15" rx="3.5"/><path d="M10.3 10.2a2.4 2.4 0 1 0 0 3.6M17.3 10.2a2.4 2.4 0 1 0 0 3.6"/>',
+  gear:'<path d="M12 2.8l2 1.5 2.5-.4 1.1 2.3 2.3 1.1-.4 2.5 1.5 2-1.5 2 .4 2.5-2.3 1.1-1.1 2.3-2.5-.4-2 1.5-2-1.5-2.5.4-1.1-2.3-2.3-1.1.4-2.5-1.5-2 1.5-2-.4-2.5 2.3-1.1 1.1-2.3 2.5.4z"/><circle cx="12" cy="12" r="3"/>',
+  full:'<path d="M4 9V5.5C4 4.7 4.7 4 5.5 4H9M15 4h3.5c.8 0 1.5.7 1.5 1.5V9M20 15v3.5c0 .8-.7 1.5-1.5 1.5H15M9 20H5.5C4.7 20 4 19.3 4 18.5V15"/>',
+  x:'<path d="M17.5 6.5l-11 11M6.5 6.5l11 11"/>',
+  export:'<path d="M12 15V3.8M7.5 8.2 12 3.8l4.5 4.4"/><path d="M4 14.5v3.8c0 1 .8 1.7 1.7 1.7h12.6c1 0 1.7-.8 1.7-1.7v-3.8"/>',
+  bolt:'<path d="M13.4 2.6 4.6 13.2c-.4.5 0 1.3.6 1.3H11l-1 6.9c-.1.7.8 1.1 1.3.5l8.8-10.6c.4-.5 0-1.3-.6-1.3H13.6l1.1-6.9c.1-.7-.8-1.1-1.3-.5z" fill="currentColor" stroke="none"/>',
+  check:'<path d="M19.5 6.5 9.5 17l-5-5"/>',
+  in:'<path d="M9 4H6.5C5.7 4 5 4.7 5 5.5v13c0 .8.7 1.5 1.5 1.5H9"/><path d="M12 12h8M16.5 8.5 20 12l-3.5 3.5"/>',
+  out:'<path d="M15 4h2.5c.8 0 1.5.7 1.5 1.5v13c0 .8-.7 1.5-1.5 1.5H15"/><path d="M4 12h8M8.5 8.5 12 12l-3.5 3.5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  info:'<circle cx="12" cy="12" r="9.5" fill="currentColor" stroke="none" opacity=".18"/><path d="M12 16.5v-5M12 7.8v.1"/>',
+  warn:'<path d="M10.3 3.9 2.6 17.5c-.8 1.3.2 3 1.7 3h15.4c1.5 0 2.5-1.7 1.7-3L13.7 3.9c-.8-1.3-2.6-1.3-3.4 0z" fill="currentColor" stroke="none" opacity=".2"/><path d="M12 9.5v4M12 17v.1"/>',
+  kbd:'<rect x="2.5" y="5.5" width="19" height="13" rx="3"/><path d="M7 10h.01M11 10h.01M15 10h.01M17.5 10h.01M8 14.5h8"/>',
+  copy:'<rect x="8.5" y="8.5" width="12" height="12" rx="2.5"/><path d="M15.5 8.5V6c0-1.4-1.1-2.5-2.5-2.5H6C4.6 3.5 3.5 4.6 3.5 6v7c0 1.4 1.1 2.5 2.5 2.5h2.5"/>',
+  folder:'<path d="M3 7c0-1.1.9-2 2-2h4l2 2.5h8c1.1 0 2 .9 2 2V17c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2z"/>',
+  chev:'<path d="M6.5 9.5 12 15l5.5-5.5"/>',
+  tune:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>'
+};
+const svg=(n,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${P[n]}</svg>`;
+document.querySelectorAll('[data-i]').forEach(e=>{e.innerHTML=svg(e.dataset.i,+e.dataset.s||18)});
+
+/* ---------- state ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const win=$('#win'), stage=$('#stage');
+const DUR=184.52, FPS=144, SRC_MBPS=42;
+const S={t:12.4,playing:false,segs:[{a:12.4,b:41.08}],act:0,mode:'size',mb:20,codec:'h264',smart:false};
+let seed=7; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const KF=[]; for(let k=0;k<DUR;k+=1.4+rnd()*1.3) KF.push(+k.toFixed(3));
+const kfBefore=t=>{let r=0;for(const k of KF){if(k<=t+1e-6)r=k;else break}return r};
+const fmtS=t=>{t=Math.max(0,t);return `${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`};
+const fmtL=t=>{t=Math.max(0,t);return `${String(Math.floor(t/60)).padStart(2,'0')}:${(t%60).toFixed(2).padStart(5,'0')}`};
+const fmtMB=v=>v<10?v.toFixed(1):String(Math.round(v));
+const total=()=>S.segs.reduce((a,g)=>a+g.b-g.a,0);
+
+/* ---------- fit-to-size planner (the Rust side would use the same logic) ---------- */
+const BPP={h264:.040,hevc:.028,av1:.022};               // min bits-per-pixel that still looks good
+const LADDER=[[2560,1440,60],[1920,1080,60],[1280,720,60],[1280,720,30],[854,480,30]];
+function plan(){
+  const dur=total(), audio=128;
+  const vk=S.mb*8*1000*.96/dur-audio;                    // 4% container/safety margin
+  let pick=null;
+  for(const [w,h,f] of LADDER){if(vk*1000/(w*h*f)>=BPP[S.codec]){pick=[w,h,f];break}}
+  return {vk:Math.round(vk),audio,pick,ok:!!pick&&vk>300,size:S.mb*.95};
+}
+function estimate(){
+  const dur=total();
+  if(S.mode==='size') return plan().size;
+  if(S.mode==='lossless') return dur*SRC_MBPS/8;
+  const q=+$('#q').value; return dur*(4+q*.32)*({h264:1,hevc:.7,av1:.6}[S.codec])/8;
+}
+
+/* ---------- procedural stand-in for video ---------- */
+function scene(c,w,h,t){
+  const shot=Math.floor(t/23), lt=t-shot*23, base=(shot*67+205)%360;
+  const g=c.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,`hsl(${base},50%,${14+lt*.5}%)`);
+  g.addColorStop(.6,`hsl(${(base+38)%360},70%,${42+lt*.6}%)`);
+  g.addColorStop(1,`hsl(${(base+60)%360},55%,18%)`);
+  c.fillStyle=g;c.fillRect(0,0,w,h);
+  const sx=w*(.22+lt/23*.56), sy=h*(.56-Math.sin(lt/23*Math.PI)*.2);
+  const sg=c.createRadialGradient(sx,sy,0,sx,sy,h*.4);
+  sg.addColorStop(0,`hsla(${(base+70)%360},100%,88%,.95)`);sg.addColorStop(.1,`hsla(${(base+60)%360},100%,70%,.55)`);sg.addColorStop(1,'hsla(0,0%,0%,0)');
+  c.fillStyle=sg;c.fillRect(0,0,w,h);
+  for(let L=0;L<4;L++){
+    const y0=h*(.6+L*.1), amp=h*(.07-L*.01), f=(L+1)*1.2, sp=(L+1)*.09;
+    c.beginPath();c.moveTo(0,h);
+    for(let i=0;i<=48;i++){const x=i/48*w,u=i/48*f*Math.PI*2+t*sp+L*1.7;c.lineTo(x,y0+Math.sin(u)*amp+Math.sin(u*2.3+L)*amp*.35)}
+    c.lineTo(w,h);c.closePath();c.fillStyle=`hsl(${(base+18+L*9)%360},${38-L*5}%,${15-L*3}%)`;c.fill();
+  }
+}
+const vc=$('#video'), vx=vc.getContext('2d'); let VW=0,VH=0;
+function sizeVideo(){const r=stage.getBoundingClientRect(),d=Math.min(devicePixelRatio,1.5);VW=vc.width=Math.round(r.width*d);VH=vc.height=Math.round(r.height*d)}
+function drawVideo(){
+  vx.fillStyle='#000';vx.fillRect(0,0,VW,VH);
+  let w=VW,h=w*9/16; if(h>VH){h=VH;w=h*16/9}
+  vx.save();vx.translate((VW-w)/2,(VH-h)/2);vx.beginPath();vx.rect(0,0,w,h);vx.clip();scene(vx,w,h,S.t);
+  vx.fillStyle='rgba(255,255,255,.88)';vx.font=`700 ${Math.round(h*.026)}px Inter, Segoe UI, sans-serif`;
+  vx.fillText('ROUND 7   12 – 9',w*.03,h*.075);vx.restore();
+}
+const thumb=(cv,t)=>scene(cv.getContext('2d'),cv.width,cv.height,t);
+
+/* ---------- player controller ---------- */
+const seek=$('#seek'), spv=$('#spv');
+function renderOSC(){
+  const p=S.t/DUR*100;
+  $('#sfill').style.width=p+'%';$('#sknob').style.left=p+'%';
+  $('#tcur').textContent=fmtS(S.t);$('#trem').textContent='-'+fmtS(DUR-S.t);
+  $$('.pp').forEach(e=>e.innerHTML=svg(S.playing?'pause':'play',+e.dataset.s||18));
+}
+function hoverPreview(el,pv,e){
+  const r=el.getBoundingClientRect(),x=Math.min(Math.max(e.clientX-r.left,0),r.width),t=x/r.width*DUR;
+  pv.style.left=Math.min(Math.max(x,85),r.width-85)+'px';pv.classList.add('show');
+  thumb(pv.querySelector('canvas'),t);pv.querySelector('b').textContent=fmtL(t);return {x,t};
+}
+let seeking=false;
+seek.addEventListener('pointerdown',e=>{seeking=true;seek.setPointerCapture(e.pointerId);seekTo(e)});
+seek.addEventListener('pointermove',e=>{hoverPreview(seek,spv,e);if(seeking)seekTo(e)});
+seek.addEventListener('pointerup',()=>seeking=false);
+seek.addEventListener('pointerleave',()=>spv.classList.remove('show'));
+function seekTo(e){const r=seek.getBoundingClientRect();S.t=Math.min(Math.max((e.clientX-r.left)/r.width,0),1)*DUR;frame(true)}
+
+/* ---------- timeline ---------- */
+const tl=$('#tl'), strip=$('#strip'), axis=$('#axis'), tpv=$('#tpv');
+function drawStrip(){
+  const r=tl.getBoundingClientRect(); if(!r.width) return;
+  const d=Math.min(devicePixelRatio,2), h=54, tw=h*16/9, n=Math.ceil(r.width/tw);
+  strip.width=r.width*d;strip.height=h*d;
+  const c=strip.getContext('2d'), tmp=document.createElement('canvas');
+  tmp.width=Math.round(tw*d);tmp.height=Math.round(h*d);
+  for(let i=0;i<n;i++){thumb(tmp,(i+.5)*tw/r.width*DUR);c.drawImage(tmp,Math.round(i*tw*d),0)}
+  drawAxis();
+}
+function drawAxis(){
+  const r=tl.getBoundingClientRect(); if(!r.width) return;
+  const d=Math.min(devicePixelRatio,2);axis.width=r.width*d;axis.height=16*d;
+  const u=axis.getContext('2d');u.scale(d,d);
+  u.font='500 10.5px Inter, Segoe UI, sans-serif';u.textBaseline='top';
+  if(S.mode==='lossless'){u.fillStyle='rgba(255,178,36,.6)';KF.forEach(t=>{u.beginPath();u.arc(t/DUR*r.width,2,1.2,0,7);u.fill()})}
+  u.fillStyle='rgba(244,244,246,.38)';
+  const step=r.width>800?20:40;
+  for(let t=0;t<=DUR;t+=step){const x=t/DUR*r.width,s=fmtS(t),w=u.measureText(s).width;
+    if(x+w/2<r.width)u.fillText(s,t===0?0:x-w/2,5)}
+}
+function renderClip(){
+  const s=S.segs[S.act], sorted=[...S.segs].sort((a,b)=>a.a-b.a);
+  let html='',prev=0;
+  sorted.forEach(g=>{if(g.a>prev)html+=`<div class="dim ${prev===0?'first':''}" style="left:${prev/DUR*100}%;width:${(g.a-prev)/DUR*100}%"></div>`;prev=g.b});
+  if(prev<DUR)html+=`<div class="dim last" style="left:${prev/DUR*100}%;width:${(DUR-prev)/DUR*100}%"></div>`;
+  if(S.mode==='lossless'&&!S.smart&&s){const k=kfBefore(s.a);html+=`<div class="snap" style="left:${k/DUR*100}%;width:${(s.a-k)/DUR*100}%"></div>`}
+  html+=S.segs.map((g,i)=>`<div class="sel ${i===S.act?'':'inactive'}" style="left:${g.a/DUR*100}%;width:${(g.b-g.a)/DUR*100}%">
+      <div class="h l" data-h="a" data-r="${i}"></div><div class="h r" data-h="b" data-r="${i}"></div>
+      ${(g.b-g.a)/DUR>.07?`<span class="lbl num">${(g.b-g.a).toFixed(1)} s</span>`:''}</div>`).join('');
+  $('#ranges').innerHTML=html;
+  $('#ph').style.left=S.t/DUR*100+'%';
+  $('#tltime').textContent=fmtL(S.t);$('#tldur').textContent='/ '+fmtL(DUR);
+  $('#chips').innerHTML=S.segs.map((g,i)=>`<span class="chip ${i===S.act?'on':''}" data-c="${i}">${i+1}&nbsp; ${fmtL(g.a)} – ${fmtL(g.b)}${S.segs.length>1?`<span class="x" data-del="${i}">${svg('x',11)}</span>`:'<span style="width:4px"></span>'}</span>`).join('');
+  const note=$('#note');
+  if(S.mode==='lossless'&&s){
+    const k=kfBefore(s.a),off=s.a-k;
+    if(S.smart){note.className='note';note.innerHTML=`${svg('check',13)} Smart cut, frame-accurate start`}
+    else if(off>.01){note.className='note warn';note.innerHTML=`${svg('warn',13)} Start snaps to keyframe ${fmtL(k)} (−${off.toFixed(2)} s)`}
+    else{note.className='note';note.innerHTML=`${svg('check',13)} In point is on a keyframe`}
+  } else if(S.mode==='size'){
+    const p=plan();note.className='note'+(p.ok?'':' warn');
+    note.innerHTML=p.ok?`${svg('bolt',13)} NVENC ${S.codec.toUpperCase()} · ${p.pick[1]}p${p.pick[2]} · ${(p.vk/1000).toFixed(1)} Mbps`:`${svg('warn',13)} Too long for ${S.mb} MB. Trim it or pick a bigger limit`;
+  } else {note.className='note';note.innerHTML=`${svg('bolt',13)} NVENC ${S.codec.toUpperCase()} · frame-accurate`}
+  $$('#mdock button,#msheet button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.mode));
+  $('#mdsize').textContent=S.mb+' MB';
+  const est=estimate(), m=$('#meter');
+  m.classList.toggle('over',est>S.mb);m.querySelector('i').style.width=Math.min(est/S.mb*100,100)+'%';
+  m.querySelector('b').textContent=fmtMB(est)+' MB';m.querySelector('span').textContent='/ '+S.mb;
+  $('#smarks').innerHTML=S.segs.map(g=>`<div class="clipmark" style="left:${g.a/DUR*100}%;width:${(g.b-g.a)/DUR*100}%"></div>`).join('');
+  renderSheet();
+}
+let drag=null;
+tl.addEventListener('pointerdown',e=>{
+  const h=e.target.closest('.h');tl.setPointerCapture(e.pointerId);
+  if(h){drag={r:+h.dataset.r,k:h.dataset.h};S.act=drag.r}else drag={seek:true};tlMove(e);
+});
+tl.addEventListener('pointermove',e=>{const {x}=hoverPreview(tl,tpv,e);$('#hl').style.left=x+'px';if(drag)tlMove(e)});
+tl.addEventListener('pointerup',()=>drag=null);
+tl.addEventListener('pointerleave',()=>tpv.classList.remove('show'));
+function tlMove(e){
+  const r=tl.getBoundingClientRect(),t=Math.min(Math.max((e.clientX-r.left)/r.width,0),1)*DUR;
+  if(drag.seek)S.t=t;
+  else{const g=S.segs[drag.r];if(drag.k==='a')g.a=Math.min(t,g.b-.5);else g.b=Math.max(t,g.a+.5);S.t=drag.k==='a'?g.a:g.b}
+  frame(true);
+}
+
+/* ---------- export sheet ---------- */
+function renderSheet(){
+  const dur=total();
+  $('#shsub').textContent=`${S.segs.length} segment${S.segs.length>1?'s':''} · ${dur.toFixed(1)} s`;
+  ['size','quality','lossless'].forEach(m=>$('#p-'+m).classList.toggle('hide',S.mode!==m));
+  $('#p-enc').classList.toggle('hide',S.mode==='lossless');
+  $('#multi').classList.toggle('hide',S.segs.length<2);
+  $('#smart').classList.toggle('on',S.smart);
+  $$('#presets .preset').forEach(b=>b.classList.toggle('on',+b.dataset.mb===S.mb));
+  $$('#codec button').forEach(b=>b.classList.toggle('on',b.dataset.c===S.codec));
+  $('#codecnote').innerHTML={
+    h264:`${svg('check',13)} Plays everywhere in Discord, including the inline player on desktop, web and mobile`,
+    hevc:`${svg('info',13)} About 30% smaller for the same quality, but many Discord clients won't play it inline`,
+    av1:`${svg('info',13)} The best quality for the size. Inline playback works in recent Discord clients only`}[S.codec];
+  const p=plan();
+  $('#autobox').innerHTML=p.ok
+    ?`<div><small>Resolution</small><b>${p.pick[1]}p</b></div><div><small>Frame rate</small><b>${p.pick[2]} fps</b></div><div><small>Bitrate</small><b>${(p.vk/1000).toFixed(1)} Mbps</b></div>
+      <div class="full">${svg('bolt',12)} Picked automatically to stay under ${S.mb} MB · AAC ${p.audio}k audio</div>`
+    :`<div class="full" style="border:0;padding:0;color:var(--bad)">${svg('warn',14)} ${dur.toFixed(0)} s is too long to look good at ${S.mb} MB. Trim the clip or pick a bigger limit.</div>`;
+  const q=+$('#q').value;$('#qlbl').textContent=`${q>85?'Visually lossless':q>55?'High':q>30?'Balanced':'Small'} · CQ ${Math.round(34-q*.18)}`;
+  const est=estimate(), over=est>S.mb;
+  $('#lossinfo').className='info'+(over?' warn':'');
+  $('#lossinfo').innerHTML=over
+    ?`${svg('warn',16)}<div><b>${fmtMB(est)} MB is over your ${S.mb} MB limit.</b> A lossless cut keeps the source bitrate (${SRC_MBPS} Mbps). Use Fit to size for Discord.</div>`
+    :`${svg('check',16)}<div><b>Stream copy</b>, no quality loss, done in about a second.</div>`;
+  const secs=S.mode==='lossless'?'about 1 s':`about ${Math.max(1,Math.round(dur*FPS/900))} s on NVENC`;
+  $('#est').innerHTML=`<b class="${over?'over':''}">≈ ${fmtMB(est)} MB</b>${secs}`;
+  if(ADV_DEFAULT)renderAdv();
+}
+$('#q').addEventListener('input',renderClip);
+$('#smart').onclick=()=>{S.smart=!S.smart;renderClip()};
+$('#presets').addEventListener('click',e=>{const b=e.target.closest('[data-mb]');if(b){S.mb=+b.dataset.mb;renderClip()}});
+$('#codec').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b){S.codec=b.dataset.c;fillProfiles();renderClip()}});
+$$('.seg').forEach(seg=>seg.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b||b.dataset.c)return;
+  if(b.dataset.m){S.mode=b.dataset.m;drawAxis();renderClip();return}
+  seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+}));
+$$('.sw:not(#smart)').forEach(s=>s.onclick=()=>s.classList.toggle('on'));
+
+/* ---------- themed dropdowns (replace every native <select>) ---------- */
+let MENU=null;
+function enhance(sel){
+  const dd=document.createElement('button');dd.type='button';dd.className='dd';
+  const st=sel.getAttribute('style');if(st)dd.setAttribute('style',st);
+  sel.style.display='none';sel.after(dd);sel._dd=dd;
+  sel._sync=()=>{const o=sel.options[sel.selectedIndex];dd.innerHTML=`<span class="v">${o?o.textContent:''}</span><span class="chev">${svg('chev',15)}</span>`};
+  sel._sync();sel.addEventListener('change',sel._sync);
+  dd.addEventListener('click',e=>{e.stopPropagation();MENU&&MENU.sel===sel?closeMenu():openMenu(sel)});
+}
+function openMenu(sel){
+  closeMenu();
+  const dd=sel._dd, r=dd.getBoundingClientRect(), m=document.createElement('div');m.className='menu';
+  const items=[];let html='';
+  [...sel.children].forEach(ch=>{
+    const add=o=>{const i=items.length;items.push(o);
+      html+=`<div class="it ${o.selected?'sel':''} ${o.disabled?'dis':''}" data-k="${i}"><span class="ck">${o.selected?svg('check',14):''}</span><span class="tx">${o.textContent}${o.dataset.d?`<small>${o.dataset.d}</small>`:''}</span></div>`};
+    if(ch.tagName==='OPTGROUP'){html+=`<div class="grp">${ch.label}</div>`;[...ch.children].forEach(add)}else add(ch);
+  });
+  m.innerHTML=html;document.body.appendChild(m);
+  m.style.minWidth=r.width+'px';
+  const mh=Math.min(m.scrollHeight,320), below=innerHeight-r.bottom;
+  if(below<mh+12&&r.top>below){m.classList.add('up');m.style.top=(r.top-mh-6)+'px'}else m.style.top=(r.bottom+6)+'px';
+  m.style.left=Math.min(r.left,innerWidth-m.offsetWidth-8)+'px';
+  let act=Math.max(0,sel.selectedIndex);
+  const hi=k=>{act=k;m.querySelectorAll('.it').forEach(e=>e.classList.toggle('act',+e.dataset.k===k));const el=m.querySelector(`[data-k="${k}"]`);el&&el.scrollIntoView({block:'nearest'})};
+  hi(act);
+  m.addEventListener('pointermove',e=>{const it=e.target.closest('.it:not(.dis)');if(it&&+it.dataset.k!==act)hi(+it.dataset.k)});
+  m.addEventListener('click',e=>{const it=e.target.closest('.it:not(.dis)');if(it)pick(+it.dataset.k)});
+  const pick=k=>{if(items[k].disabled)return;sel.selectedIndex=[...sel.options].indexOf(items[k]);sel.dispatchEvent(new Event('change',{bubbles:true}));closeMenu();dd.focus()};
+  const step=d=>{let k=act;do{k=(k+d+items.length)%items.length}while(items[k].disabled&&k!==act);hi(k)};
+  MENU={sel,m,step,pick:()=>pick(act)};
+  dd.classList.add('open');requestAnimationFrame(()=>m.classList.add('show'));
+}
+function closeMenu(){if(!MENU)return;MENU.sel._dd.classList.remove('open');MENU.m.remove();MENU=null}
+document.addEventListener('click',e=>{if(MENU&&!MENU.m.contains(e.target))closeMenu()});
+document.addEventListener('scroll',e=>{if(MENU&&e.target!==MENU.m&&!MENU.m.contains(e.target))closeMenu()},true);
+addEventListener('resize',closeMenu);
+document.addEventListener('keydown',e=>{
+  if(!MENU)return;
+  const k=e.key;
+  if(k==='ArrowDown'||k==='ArrowUp'){MENU.step(k==='ArrowDown'?1:-1)}
+  else if(k==='Enter'||k===' '){MENU.pick()}
+  else if(k==='Escape'||k==='Tab'){const dd=MENU.sel._dd;closeMenu();dd.focus()}
+  else return;
+  e.preventDefault();e.stopImmediatePropagation();
+},true);
+
+/* ---------- advanced export ---------- */
+const PROFILES={h264:[['high','High','Recommended'],['main','Main',''],['baseline','Baseline','Old devices']],
+  hevc:[['main','Main','8-bit'],['main10','Main 10','10-bit']],av1:[['main','Main','8 or 10-bit']]};
+const v=id=>{const e=$('#'+id);return e?e.value:''}, on=id=>$('#'+id).classList.contains('on');
+function fillProfiles(){
+  const sel=$('#a-prof'),cur=sel.value;
+  sel.innerHTML=PROFILES[S.codec].map(([val,l,d])=>`<option value="${val}" ${d?`data-d="${d}"`:''}>${l}</option>`).join('');
+  if([...sel.options].some(o=>o.value===cur))sel.value=cur;sel._sync&&sel._sync();
+}
+function advConstraints(){
+  // rate-control modes that can't hit a size target
+  [...$('#a-rc').options].forEach(o=>{o.disabled=S.mode==='size'&&(o.value==='cq'||o.value==='qp');
+    o.dataset.d=o.disabled?'Not available in Fit to size':({vbr:'Target bitrate with capped peaks. Best for size limits',cbr:'Flat bitrate. Predictable, less efficient',cq:'Constant quality. Size varies',qp:'Fixed quantizer per frame type'}[o.value])});
+  if($('#a-rc').selectedOptions[0].disabled){$('#a-rc').value='vbr'}
+  // 10-bit H.264 is not supported by NVENC
+  const o10=$('#a-depth').options[1];o10.disabled=S.codec==='h264';o10.dataset.d=o10.disabled?'Not supported by H.264 NVENC':'p010 · less banding';
+  if(o10.disabled)$('#a-depth').value='8';
+  $('#aqrow').classList.toggle('hide',!on('t-saq'));
+  $('#aqv').textContent=v('a-aqs');
+  $('#adv-video').classList.toggle('hide',S.mode==='lossless');
+  ['a-rc','a-depth'].forEach(id=>$('#'+id)._sync&&$('#'+id)._sync());
+}
+function buildCmd(){
+  const s=S.segs[S.act]||S.segs[0], p=plan(), enc={h264:'h264_nvenc',hevc:'hevc_nvenc',av1:'av1_nvenc'}[S.codec];
+  const tracks=$$('#tracks .trk.on').map(t=>+t.dataset.t), L=[];
+  const audio=()=>{
+    const ac=v('a-ac');if(ac==='none'||!tracks.length)return ['-an'];
+    const out=[];
+    const filt=[];
+    if(on('t-mix')&&tracks.length>1&&ac!=='copy'){
+      const ins=tracks.map(t=>{const vol=t===0?+v('a-gv'):t===1?+v('a-mv'):0;return vol?`[0:a:${t}]volume=${vol}dB[a${t}]`:null});
+      const pre=ins.filter(Boolean);
+      const labels=tracks.map(t=>ins[tracks.indexOf(t)]?`[a${t}]`:`[0:a:${t}]`).join('');
+      filt.push(`${pre.length?pre.join(';')+';':''}${labels}amix=inputs=${tracks.length}:normalize=0${on('t-loud')?',loudnorm=I=-14:TP=-1.5':''}[aout]`);
+      out.push(`-filter_complex "${filt[0]}"`,'-map 0:v:0','-map "[aout]"');
+    } else {out.push('-map 0:v:0',...tracks.map(t=>`-map 0:a:${t}`));if(on('t-loud')&&ac!=='copy')out.push('-af "loudnorm=I=-14:TP=-1.5"')}
+    if(ac==='copy')out.push('-c:a copy');
+    else out.push(`-c:a ${ac} -b:a ${v('a-ab')}k`+(v('a-ch')!=='src'?` -ac ${v('a-ch')}`:'')+` -ar ${v('a-sr')}`);
+    return out;
+  };
+  if(S.mode==='lossless'){
+    L.push(`<b>ffmpeg</b> -ss ${kfBefore(s.a).toFixed(3)} -to ${s.b.toFixed(3)}`,`-i "Ranked_Match_2026-11-03_21-14.mkv"`,
+      ...audio(),'-c:v copy -avoid_negative_ts make_zero');
+  } else {
+    const res=S.mode==='size'&&p.pick?p.pick[1]:+v('q-res'), fps=S.mode==='size'&&p.pick?p.pick[2]:+v('q-fps');
+    const hw=on('t-hw');
+    L.push(`<b>ffmpeg</b>`+(hw?' -hwaccel cuda -hwaccel_output_format cuda':''));
+    // crop happens in the NVDEC decoder (top x bottom x left x right) so frames stay on the GPU
+    const crop={916:'0x0x875x875',11:'0x0x560x560',43:'0x0x320x320',219:'171x171x0x0'}[v('a-crop')];
+    L.push(`-ss ${s.a.toFixed(3)} -to ${s.b.toFixed(3)}`+(crop?` -c:v h264_cuvid -crop ${crop}`:'')+` -i "Ranked_Match_2026-11-03_21-14.mkv"`);
+    const vf=[];
+    if(v('a-hdr')==='tonemap')vf.push('libplacebo=tonemapping=bt.2390:colorspace=bt709:color_primaries=bt709:color_trc=bt709');
+    vf.push(`scale_cuda=-2:${res}:interp_algo=${v('a-scale')}`+(v('a-depth')==='10'?':format=p010le':''));
+    if(fps<FPS)vf.push(`fps=${fps}`);
+    if(+v('a-sharp'))vf.push(`sharpen_npp`);
+    L.push(`-vf "${vf.join(',')}"`);
+    L.push(`-c:v ${enc} -preset ${v('a-preset')} -tune ${v('a-tune')} -profile:v ${v('a-prof')}`);
+    const rc=v('a-rc');
+    if(rc==='vbr'||rc==='cbr'){
+      const vk=S.mode==='size'?p.vk:Math.round((4+(+$('#q').value)*.32)*1000);
+      L.push(`-rc ${rc} -b:v ${vk}k`+(rc==='vbr'?` -maxrate ${Math.round(vk*+v('a-max'))}k`:'')+` -bufsize ${vk*2}k`);
+    } else if(rc==='cq')L.push(`-rc vbr -cq ${Math.round(34-(+$('#q').value)*.18)} -b:v 0`);
+    else L.push(`-rc constqp -qp 23`);
+    L.push(`-multipass ${v('a-mp')}`+(+v('a-la')?` -rc-lookahead ${v('a-la')}`:'')+(on('t-wp')?' -weighted_pred 1 -bf 0':` -bf ${v('a-bf')} -b_ref_mode ${v('a-bref')}`)
+      +` -g ${Math.round(+v('a-gop')*fps)}`+(v('a-refs')!=='auto'?` -refs ${v('a-refs')}`:''));
+    const aq=[];if(on('t-saq'))aq.push(`-spatial-aq 1 -aq-strength ${v('a-aqs')}`);if(on('t-taq'))aq.push('-temporal-aq 1');if(aq.length)L.push(aq.join(' '));
+    if(v('a-range')!=='auto')L.push(`-color_range ${v('a-range')}`);
+    L.push(v('a-vsync')==='cfr'?'-fps_mode cfr':'-fps_mode passthrough');
+    L.push(...audio());
+  }
+  const tail=[];
+  if(on('t-fast'))tail.push('-movflags +faststart');
+  if(!on('t-meta'))tail.push('-map_metadata -1');
+  if(tail.length)L.push(tail.join(' '));
+  if(v('x-args').trim())L.push(v('x-args').trim().replace(/[<>&]/g,''));
+  L.push(`"D:\\Videos\\Clips\\Ranked_Match_clip01.mp4"`);
+  return L.map(l=>l.replace(/("[^"]*")/g,'<span class="q">$1</span>').replace(/(^|\s)(-[a-z_:0-9\-]+)/gi,'$1<span class="f">$2</span>')).join(' ^\n  ');
+}
+let ADV_DEFAULT=null;
+const advState=()=>[...$$('#adv select,#adv input'),...$$('#adv .sw,#adv .trk')].filter(e=>e.id!=='a-bank').map(e=>e.matches('.sw,.trk')?e.classList.contains('on'):e.value);
+function renderAdv(){
+  advConstraints();
+  $$('#tracks .trk').forEach(t=>t.querySelector('.cb').innerHTML=t.classList.contains('on')?svg('check',11):'');
+  $('#cmd').innerHTML=buildCmd();
+  if(ADV_DEFAULT){const cur=advState(),n=cur.filter((x,i)=>x!==ADV_DEFAULT[i]).length;
+    const t=$('#advtag');t.textContent=n?`${n} changed`:'Defaults';t.classList.toggle('changed',!!n)}
+}
+$('#advh').onclick=()=>$('#adv').classList.toggle('open');
+$('#tracks').addEventListener('click',e=>{const t=e.target.closest('.trk');if(t){t.classList.toggle('on');renderAdv()}});
+$('#adv').addEventListener('change',renderAdv);
+$('#adv').addEventListener('input',renderAdv);
+$('#adv').addEventListener('click',e=>{if(e.target.closest('.sw'))renderAdv()});
+$('#cpcmd').onclick=()=>{const t=$('#cmd').textContent;navigator.clipboard&&navigator.clipboard.writeText(t).catch(()=>{});$('#cpcmd').lastChild.textContent='Copied';setTimeout(()=>$('#cpcmd').lastChild.textContent='Copy',1200)};
+$('#advreset').onclick=()=>{
+  const els=[...$$('#adv select,#adv input'),...$$('#adv .sw,#adv .trk')].filter(e=>e.id!=='a-bank');
+  els.forEach((e,i)=>{if(e.matches('.sw,.trk'))e.classList.toggle('on',ADV_DEFAULT[i]);else{e.value=ADV_DEFAULT[i];e._sync&&e._sync()}});renderAdv()};
+['q-res','q-fps'].forEach(id=>$('#'+id).addEventListener('change',renderAdv));
+$$('select.inp').forEach(enhance);
+fillProfiles();advConstraints();ADV_DEFAULT=advState();
+
+/* ---------- job simulation ---------- */
+let jobTimer=null;
+function runJob(){
+  const job=$('#job'),bar=$('#jobbar'),t2=$('#jobt2');clearInterval(jobTimer);
+  thumb(job.querySelector('canvas'),S.segs[0].a+3);job.classList.add('show');$('#jobacts').classList.add('hide');
+  const p0=plan();let p=0;bar.className='pbar';
+  jobTimer=setInterval(()=>{
+    p+=S.mode==='lossless'?25:3.2;
+    t2.innerHTML=S.mode==='lossless'?`Copying streams · ${Math.min(p,100)|0}%`
+      :`${svg('bolt',12)} NVENC ${S.codec.toUpperCase()}${S.mode==='size'&&p0.pick?` · ${p0.pick[1]}p${p0.pick[2]}`:''} · ${Math.min(p,100)|0}% · 612 fps`;
+    if(p>=100){clearInterval(jobTimer);bar.className='pbar done';
+      t2.innerHTML=`${svg('check',13)} ${fmtMB(estimate())} MB · copied · <b style="color:var(--text)">Ctrl+V</b> in Discord`;
+      $('#jobacts').classList.remove('hide')}
+    bar.firstElementChild.style.width=Math.min(p,100)+'%';
+  },110);
+}
+
+/* ---------- actions ---------- */
+function osd(txt){$('#osdtxt').textContent=txt;const o=$('#osd');o.classList.add('show');clearTimeout(osd.t);osd.t=setTimeout(()=>o.classList.remove('show'),1300)}
+function flash(){const f=$('#flash');f.innerHTML=svg(S.playing?'play':'pause',28);f.classList.remove('go');void f.offsetWidth;f.classList.add('go')}
+function setClip(on){win.classList.toggle('clip',on);if(!on)win.classList.remove('exporting');setTimeout(()=>{sizeVideo();drawStrip();frame(true)},470);frame(true)}
+const A={
+  toggle(){S.playing=!S.playing;flash();renderOSC()},
+  back(){S.t=Math.max(0,S.t-5);frame(true)}, fwd(){S.t=Math.min(DUR,S.t+5);frame(true)},
+  pf(){S.playing=false;S.t=Math.max(0,S.t-1/FPS);frame(true)}, nf(){S.playing=false;S.t=Math.min(DUR,S.t+1/FPS);frame(true)},
+  clip(){setClip(!win.classList.contains('clip'))},
+  in(){const g=S.segs[S.act];g.a=Math.min(S.t,g.b-.5);osd('In  '+fmtL(g.a));frame(true)},
+  out(){const g=S.segs[S.act];g.b=Math.max(S.t,g.a+.5);osd('Out  '+fmtL(g.b));frame(true)},
+  newseg(){const a=Math.min(S.t,DUR-6);S.segs.push({a,b:Math.min(a+10,DUR)});S.segs.sort((x,y)=>x.a-y.a);S.act=S.segs.findIndex(g=>g.a===a);osd('New segment');frame(true)},
+  export(){if(!win.classList.contains('clip'))setClip(true);win.classList.add('exporting');renderSheet()},
+  closeexport(){win.classList.remove('exporting')},
+  doexport(){win.classList.remove('exporting');runJob()},
+  closejob(){$('#job').classList.remove('show');clearInterval(jobTimer)},
+  settings(){win.classList.toggle('settings-open')}
+};
+document.addEventListener('click',e=>{
+  const d=e.target.closest('[data-del]');if(d){e.stopPropagation();if(S.segs.length>1){S.segs.splice(+d.dataset.del,1);S.act=Math.min(S.act,S.segs.length-1);renderClip()}return}
+  const c=e.target.closest('.chip[data-c]');if(c){S.act=+c.dataset.c;S.t=S.segs[S.act].a;frame(true);return}
+  const a=e.target.closest('[data-act]');if(a&&A[a.dataset.act])A[a.dataset.act]();
+});
+vc.addEventListener('click',()=>A.toggle());
+$('#scrim').addEventListener('click',e=>{if(e.target.id==='scrim')A.settings()});
+$('#nav').addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b)return;
+  $$('#nav button').forEach(x=>x.classList.toggle('on',x===b));$$('[data-pane]').forEach(p=>p.classList.toggle('hide',p.dataset.pane!==b.dataset.p))});
+document.addEventListener('keydown',e=>{
+  if(e.target.matches('input,select,textarea'))return;
+  if(e.target.matches('button')&&(e.key===' '||e.key==='Enter'))return;
+  const k=e.key.toLowerCase(), clip=win.classList.contains('clip');
+  if(k===' '){e.preventDefault();A.toggle()}
+  else if(k==='c')A.clip();
+  else if(k==='i'&&clip)A.in(); else if(k==='o'&&clip)A.out();
+  else if(k==='n'&&clip)A.newseg();
+  else if(k==='e'){e.preventDefault();e.ctrlKey?A.doexport():A.export()}
+  else if(k===',')A.pf(); else if(k==='.')A.nf();
+  else if(k==='arrowleft')A.back(); else if(k==='arrowright')A.fwd();
+  else if(k==='escape'){if(win.classList.contains('settings-open'))A.settings();else if(win.classList.contains('exporting'))A.closeexport();else if(clip)A.clip()}
+});
+let idleT;function wake(){win.classList.remove('idle');clearTimeout(idleT);idleT=setTimeout(()=>{if(S.playing&&!win.classList.contains('clip'))win.classList.add('idle')},2200)}
+stage.addEventListener('pointermove',wake);
+
+/* ---------- loop ---------- */
+let last=performance.now();
+function frame(full){drawVideo();renderOSC();if(full)renderClip();else if(win.classList.contains('clip')){$('#ph').style.left=S.t/DUR*100+'%';$('#tltime').textContent=fmtL(S.t)}}
+function loop(now){
+  const dt=(now-last)/1000;last=now;
+  if(S.playing){S.t+=dt;if(S.t>=DUR)S.t=0;
+    if(win.classList.contains('clip')){const g=S.segs[S.act];if(g&&S.t>g.b&&S.t<g.b+.5)S.t=g.a}
+    frame();}
+  requestAnimationFrame(loop);
+}
+new ResizeObserver(()=>{sizeVideo();drawStrip();frame(true)}).observe(stage);
+if(document.fonts)document.fonts.ready.then(()=>{drawStrip();frame(true)});
+
+$('#states').addEventListener('click',e=>{
+  const b=e.target.closest('[data-s]');if(!b)return;
+  $$('#states button').forEach(x=>x.classList.toggle('on',x===b));
+  win.classList.remove('exporting','settings-open');A.closejob();
+  const s=b.dataset.s;
+  if(s==='player')setClip(false);
+  if(s==='clip')setClip(true);
+  $('#adv').classList.remove('open');
+  if(s==='export'){setClip(true);setTimeout(A.export,100)}
+  if(s==='advanced'){setClip(true);$('#adv').classList.add('open');setTimeout(()=>{A.export();if(!qm)$('.sheet-b').scrollTop=$('#adv').offsetTop-70},100)}
+  if(s==='settings'){setClip(false);win.classList.add('settings-open')}
+  if(s==='job'){setClip(true);S.mode='size';renderClip();runJob()}
+});
+sizeVideo();frame(true);requestAnimationFrame(loop);
+const qs=new URLSearchParams(location.search).get('state');
+const qm=new URLSearchParams(location.search).get('menu');   // review hook: ?state=advanced&menu=a-preset
+if(qm)document.head.insertAdjacentHTML('beforeend','<style>*{transition:none!important}</style>');
+if(qs){const b=document.querySelector(`#states [data-s="${qs}"]`);if(b)b.click()}
+if(qm)setTimeout(()=>{const sc=new URLSearchParams(location.search).get('scroll');
+  const el=$('#'+(sc||qm));if(el)$('.sheet-b').scrollTop=(el._dd||el).offsetTop-120;
+  setTimeout(()=>{if($('#'+qm)){openMenu($('#'+qm));MENU.m.classList.add('show')}},400)},700);
+</script>
+</body>
+</html>
