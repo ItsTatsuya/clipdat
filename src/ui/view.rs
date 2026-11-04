@@ -3,8 +3,8 @@
 use std::path::PathBuf;
 
 use gpui::{
-    anchored, deferred, div, img, linear_color_stop, linear_gradient, point, prelude::*, px, relative, AnyElement,
-    Context, ExternalPaths, FontWeight, MouseButton, MouseDownEvent, MouseMoveEvent, ObjectFit, ScrollEvent,
+    anchored, canvas, deferred, div, img, linear_color_stop, linear_gradient, point, prelude::*, px, relative, AnyElement,
+    Context, ExternalPaths, FontWeight, MouseButton, DispatchPhase, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ObjectFit, ScrollEvent,
     Window, WindowControlArea,
 };
 
@@ -37,13 +37,10 @@ impl Render for Clipdat {
             .on_key_down(cx.listener(|this, ev, window, cx| this.on_key(ev, window, cx)))
             .on_mouse_move(cx.listener(|this, ev: &MouseMoveEvent, window, cx| {
                 this.wake(cx);
-                if this.drag.is_some() {
-                    this.drag_to(ev.position.x, cx);
-                } else {
+                if this.drag.is_none() {
                     this.video_move(ev.position, ev.pressed_button == Some(MouseButton::Left), window);
                 }
             }))
-            .on_mouse_up(MouseButton::Left, cx.listener(|this, _, _, cx| this.end_drag(cx)))
             .on_drop(cx.listener(|this, paths: &ExternalPaths, window, cx| {
                 this.dropping = false;
                 let list = paths.paths();
@@ -51,6 +48,7 @@ impl Render for Clipdat {
                     this.open_file(p.to_string_lossy().into_owned(), window, cx);
                 }
             }))
+            .when(self.drag.is_some(), |d| d.child(self.drag_tracker()))
             .child(self.stage(window, cx))
             // The dock rises like a drawer: its slot grows from 0 to DOCK_H and the stage shrinks with it.
             .when(has && self.clip_e > 0.001, |d| {
@@ -65,6 +63,38 @@ impl Render for Clipdat {
 const CAPTION_W: f32 = 46.;
 
 impl Clipdat {
+    /// While a slider / timeline drag is live, follow the mouse at the *window* level.
+    ///
+    /// Element listeners (`on_mouse_move`, `on_mouse_up`) only fire while their element is hovered,
+    /// and the controller, dock and sheet occlude the root. Moves over them were dropped and a
+    /// release over them never ended the drag, so the playhead kept following the cursor.
+    /// `window.on_mouse_event` sees every event regardless of what is under the mouse.
+    fn drag_tracker(&self) -> impl IntoElement {
+        let me = self.me.clone();
+        canvas(
+            |_, _, _| {},
+            move |_, _, window, _| {
+                let m = me.clone();
+                window.on_mouse_event(move |ev: &MouseMoveEvent, phase, _, cx| {
+                    if phase != DispatchPhase::Bubble {
+                        return;
+                    }
+                    let held = ev.pressed_button == Some(MouseButton::Left);
+                    let x = ev.position.x;
+                    let _ = m.update(cx, |this, cx| if held { this.drag_to(x, cx) } else { this.end_drag(cx) });
+                });
+                let m = me.clone();
+                window.on_mouse_event(move |ev: &MouseUpEvent, phase, _, cx| {
+                    if phase == DispatchPhase::Bubble && ev.button == MouseButton::Left {
+                        let _ = m.update(cx, |this, cx| this.end_drag(cx));
+                    }
+                });
+            },
+        )
+        .absolute()
+        .size_0()
+    }
+
     fn stage(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let has = self.path.is_some();
         div()
