@@ -1,4 +1,4 @@
-//! The Cliper window: state, backend wiring and behavior. Rendering lives in `view.rs`.
+//! The Clipdat window: state, backend wiring and behavior. Rendering lives in `view.rs`.
 
 use std::{
     cell::RefCell,
@@ -82,7 +82,7 @@ impl Opt {
     }
 }
 
-pub type Pick = Rc<dyn Fn(&mut Cliper, usize, &mut Window, &mut Context<Cliper>)>;
+pub type Pick = Rc<dyn Fn(&mut Clipdat, usize, &mut Window, &mut Context<Clipdat>)>;
 
 pub struct OpenMenu {
     pub id: &'static str,
@@ -106,8 +106,8 @@ pub struct Toast {
     pub at: Instant,
 }
 
-pub struct Cliper {
-    pub me: gpui::WeakEntity<Cliper>,
+pub struct Clipdat {
+    pub me: gpui::WeakEntity<Clipdat>,
     pub focus: FocusHandle,
     pub hwnd: isize,
     pub mpv: Option<Arc<Mpv>>,
@@ -177,7 +177,7 @@ pub struct Cliper {
 
 static JOBS: std::sync::LazyLock<Jobs> = std::sync::LazyLock::new(Jobs::default);
 
-impl Cliper {
+impl Clipdat {
     pub fn new(
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -249,7 +249,7 @@ impl Cliper {
             }),
         ];
 
-        let mut this = Cliper {
+        let mut this = Clipdat {
             me: cx.entity().downgrade(),
             focus: cx.focus_handle(),
             hwnd,
@@ -463,7 +463,7 @@ impl Cliper {
                     }
                 }
                 Some("mpv-exited") => {
-                    self.toast("The video engine stopped. Restart Cliper.", true);
+                    self.toast("The video engine stopped. Restart Clipdat.", true);
                     cx.notify();
                 }
                 _ => {}
@@ -516,7 +516,7 @@ impl Cliper {
         self.merge = self.settings.segments != SegmentsPref::Separate;
         self.name_input.update(cx, |s, cx| s.set_value("", window, cx));
         self.resume_at = if self.settings.resume { self.settings.positions.get(&p).copied() } else { None };
-        window.set_window_title(&format!("{} — Cliper", crate::fmt::basename(&p)));
+        window.set_window_title(&format!("{} — Clipdat", crate::fmt::basename(&p)));
         self.mpv_cmd(vec![json!("loadfile"), json!(p)]);
         self.mpv_set("pause", json!(false));
 
@@ -1139,7 +1139,7 @@ impl Cliper {
         match util::register_file_types() {
             Ok(()) => {
                 util::open_default_apps_settings();
-                self.toast("Registered. Pick Cliper for your video types in Windows Settings", false);
+                self.toast("Registered. Pick Clipdat for your video types in Windows Settings", false);
             }
             Err(e) => self.toast(format!("Couldn't register file types: {e}"), true),
         }

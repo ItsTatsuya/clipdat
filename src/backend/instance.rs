@@ -1,4 +1,4 @@
-//! Single instance: the first Cliper owns a named pipe; later launches hand it their file and exit.
+//! Single instance: the first Clipdat owns a named pipe; later launches hand it their file and exit.
 
 use std::io::Write;
 
@@ -7,7 +7,7 @@ use tokio::net::windows::named_pipe::ServerOptions;
 
 use super::Event;
 
-const PIPE: &str = r"\\.\pipe\cliper-9000-instance";
+const PIPE: &str = r"\\.\pipe\clipdat-instance";
 
 /// Returns true if another instance took the file (this process should exit).
 pub fn forward_to_running(file: Option<&str>) -> bool {

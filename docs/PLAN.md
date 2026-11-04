@@ -1,6 +1,6 @@
-# Cliper 9000: Plan & Architecture (v2: native GPUI)
+# Clipdat: Plan & Architecture (v2: native GPUI)
 
-> **Update:** the UI moved from Tauri/WebView2 to **GPUI** (native Rust, DirectX/DirectComposition). mpv renders into a child window under GPUI's topmost composition layer. The UI process dropped from ~220 MB (WebView2) to ~85 MB. Everything below about Tauri, SolidJS and the WebView applies only to the archived version in `archive/tauri-v0/`. See README.md for the current stack.
+> **Note:** an earlier prototype used Tauri/WebView2. It was replaced by **GPUI** (native Rust, DirectX/DirectComposition), which cut the UI process from ~220 MB to ~85 MB. README.md has the details of the current stack.
 
 A lightweight, IINA-style video player for Windows that is also a clip tool built for
 **sharing gaming clips on Discord**. Open a recording, mark the moment, and export it under your size
@@ -33,18 +33,14 @@ limit with NVENC. The file lands on your clipboard, ready to paste into Discord.
 
 | Layer | Choice | Why |
 |-------|--------|-----|
-| App shell | **Tauri 2 (Rust)** | Uses the system WebView2, so no bundled Chromium. ~10 MB binary, single-instance, file associations, updater |
-| Playback | **libmpv**, rendering into a native child window | IINA's engine. Hardware decode (d3d11va/NVDEC), every format, exact frame stepping |
-| UI | **SolidJS + TypeScript + Vite**, hand-written CSS tokens | No virtual DOM, a tiny runtime, fine-grained updates for a 60 fps timeline |
+| App shell + UI | **Rust + GPUI** (+ gpui-component) | Native GPU UI through DirectX 11 / DirectComposition. No WebView, a single ~85 MB process |
+| Playback | **mpv** sidecar rendering into a child window (`--wid`), over JSON IPC | IINA's engine. Hardware decode (d3d11va/NVDEC), every format, exact frame stepping |
 | Font | **Inter** (variable, bundled locally): 500 body, 600 controls, 700 headings. Tabular numbers for all timecodes and sizes | Clean, very legible at 11–13 px on dark backgrounds. Numbers don't jitter while scrubbing |
 | Icons | Bold, mostly solid, rounded set (2.4 px strokes or filled). In the real app: **Phosphor Icons "Bold/Fill"** as inline SVG | Reads clearly over video, matches the weight of Inter 600 |
 | Processing | **FFmpeg 7.1+ sidecar** (`ffmpeg.exe`/`ffprobe.exe`), progress from `-progress pipe:1` | The most reliable NVENC support. Crash-isolated from the player |
 | Clipboard | Rust `windows` crate → `CF_HDROP` (copies the file, like Explorer's copy) | Ctrl+V in Discord attaches the clip |
-| Settings | JSON in `%APPDATA%\Cliper9000` | |
-| Installer | Tauri NSIS with ProgId + file associations | |
-
-**M0 spike** (the only risky part): a transparent WebView2 layered over the mpv child window. Check for smooth compositing, input pass-through and RAM.
-**Fallback if it fails:** Qt 6/QML + mpv render API.
+| Settings | JSON in `%APPDATA%\Clipdat` | |
+| Installer | **Inno Setup**, per-user, with ProgId + file associations | No admin prompt, a clean uninstall |
 
 ---
 
@@ -128,7 +124,7 @@ The options don't allow invalid combinations: a disabled choice says why, and sw
 
 | M | Scope | Exit criteria |
 |---|-------|---------------|
-| M0 | Spike: Tauri + libmpv child window + transparent WebView2 | 1440p144 plays smoothly with the overlay. RAM measured |
+| M0 | Spike: GPUI + mpv child window under a transparent composition layer | 1440p144 plays smoothly with the overlay. RAM measured |
 | M1 | Player: open/drag-drop, controller, seek preview, tracks, file associations, single instance | Usable as the daily default player |
 | M2 | Clip mode: timeline, in/out/segments, keyframe index, lossless export | A lossless export matches the preview |
 | M3 | NVENC: detection, full-GPU pipeline, **fit-to-size planner + verify**, quality mode, CPU fallback | 10 test clips (5–90 s) all land at ≤ the limit, at the expected resolution |

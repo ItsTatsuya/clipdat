@@ -1,98 +1,118 @@
-# Cliper 9000
+<p align="center">
+  <img src="assets/brand/logo-256.png" width="112" alt="Clipdat logo">
+</p>
 
-A native, IINA-style video player for Windows, built for clipping gaming recordings and sharing them on Discord.
-You open a video, mark the moment, and export it under your Discord size limit with NVENC. The file lands on your clipboard, ready for Ctrl+V.
+<h1 align="center">Clipdat</h1>
 
-- **Player:** mpv (hardware decoding), a borderless window, a floating controller, and thumbnail previews on the seek bar
-- **Clip mode** (`C`): a timeline with thumbnails, in/out handles, multiple segments, frame stepping and keyframe markers
-- **Export modes:**
-  - **Fit to size** (10/20/50/500 MB or custom): picks the resolution and fps automatically, verifies the output size, and retries once if it's over the limit
-  - **Best quality**: constant quality on NVENC
-  - **Lossless**: stream copy, which snaps the start to a keyframe
-- **NVENC** H.264 / HEVC / AV1, with decoding, scaling and encoding all on the GPU (CUDA)
-- **Advanced options:** rate control, presets, AQ, B-frames, GOP, 10-bit, crop presets, HDR→SDR, audio track picking and mixing, loudness normalization, saved presets, and a live FFmpeg command preview
-- **After export:** the file is copied to the clipboard (CF_HDROP), so Ctrl+V in Discord attaches it
+<p align="center">
+  <b>Clip it. Fit it. Paste it.</b><br>
+  A fast, native video player for Windows that turns your gaming recordings into Discord-ready clips in seconds.
+</p>
 
-## Stack
+<p align="center">
+  <a href="../../releases/latest"><b>Download for Windows</b></a> ·
+  <a href="#features">Features</a> ·
+  <a href="#keyboard-shortcuts">Shortcuts</a> ·
+  <a href="#faq">FAQ</a>
+</p>
 
-**Rust + GPUI**: Zed's GPU UI framework, which renders through DirectX 11 / DirectComposition on Windows. There's no WebView or browser runtime. Text inputs come from `gpui-component`.
+<p align="center">
+  <img src="docs/screenshots/export.png" alt="Clipdat: clip timeline and export panel" width="860">
+</p>
 
-| Piece | How |
+---
+
+You just hit the best play of your night. Open the recording in Clipdat, press **C**, drag the handles around the moment and press **E**. A few seconds later the clip is under Discord's upload limit and already on your clipboard. Press **Ctrl+V** in Discord and it's posted.
+
+There are no upload sites, no re-encoding guesswork, and no 400 MB files to trim by hand.
+
+## Features
+
+### A player you'll actually keep as your default
+- Plays practically anything (MKV, MP4, MOV, WebM, TS, AVI and more) with **hardware decoding**, smooth even at 1440p 144 fps.
+- A clean, borderless window with a floating controller that gets out of the way.
+- Thumbnail previews when you hover the seek bar, and frame-by-frame stepping.
+- Light on your PC: the interface uses about 85 MB of memory and almost no CPU while you watch.
+
+### Clipping in the same window
+- Press **C** to slide in the timeline: a thumbnail strip with in/out handles you can grab.
+- **Multiple segments** per video. Export them merged into one clip, or as separate files.
+- Mark in and out with **I** / **O** while the video plays, and nudge frame by frame with **,** and **.**
+
+### Exports that always fit
+| Mode | What it does |
 |---|---|
-| Video | mpv (sidecar) renders into a **child window** of the GPUI window (`--wid`), controlled over its JSON IPC pipe |
-| UI over video | GPUI's DirectComposition target is *topmost*, so its transparent UI is composited **above** mpv's child window. The child window is disabled for input, so every click goes to GPUI |
-| Processing | FFmpeg 8.1 / ffprobe sidecars, with progress from `-progress pipe:1`, on a tokio runtime |
-| One FFmpeg | mpv is built from source against the **same shared FFmpeg DLLs** that ffmpeg/ffprobe use, so FFmpeg ships once. The portable app is 206 MB, an 88 MB zip (it was 470 MB / 179 MB) |
-| Font / icons | Inter (embedded) with tabular digits; a custom bold SVG icon set |
+| **Fit to size** (default) | Pick 10, 20, 50 or 500 MB, or your own limit. Clipdat picks the best resolution and frame rate the size allows, encodes, **checks the result** and re-encodes once if it's over. You never get a file that's too big. |
+| **Best quality** | Constant quality, at whatever size that takes. |
+| **Lossless** | Cuts without re-encoding, nearly instantly, with zero quality loss. |
 
-Measured during 1440p144 playback (release build): the **UI process uses 85 MB in a single process, at about 3% of one core while playing and 0.3% while paused**. mpv adds about 245 MB for the 1440p decode buffers.
+- **NVIDIA NVENC** H.264, HEVC and AV1. Decoding, scaling and encoding all happen on the GPU, many times faster than real time.
+- **After export** the file is copied to your clipboard, ready for Discord, Slack or any other chat app.
+- **Advanced options** for power users:
+  - **Encoding:** rate control, encoder presets, adaptive quantization, B-frames, keyframe interval, 10-bit
+  - **Picture:** crop to vertical (9:16) or square, HDR→SDR tone mapping
+  - **Audio:** pick and mix audio tracks (game + mic), loudness normalization
+  - **Workflow:** saved presets, and a live preview of the exact FFmpeg command
 
-The approved design is in `design/mockup.html`, and the plan is in `docs/PLAN.md`. The earlier Tauri/WebView version is kept in `archive/tauri-v0/` for reference.
-
-## Build & run
-
-Requirements: Rust (MSVC toolchain), the Visual Studio Build Tools with the Windows 10/11 SDK (GPUI compiles its shaders with `fxc`), and, to build mpv, MSYS2 at `C:\msys64` with:
-
-```sh
-pacman -S git mingw-w64-ucrt-x86_64-{gcc,meson,ninja,pkgconf,libplacebo,libass,shaderc,spirv-cross,ffnvcodec-headers,zlib}
-```
-
-```powershell
-pwsh scripts/fetch-deps.ps1         # shared FFmpeg (DLLs + ffmpeg/ffprobe) into bin/, its SDK into build/
-pwsh scripts/build-mpv.ps1          # mpv 0.41 built against that same FFmpeg, + its support DLLs into bin/
-cargo run --release -- "C:\path\to\recording.mkv"
-pwsh scripts/package.ps1            # dist/Cliper-Setup-<ver>.exe installer + portable zip
-```
-
-`package.ps1` uses an installed Inno Setup 6/7, or downloads one into `build/inno` the first time. `.cargo/config.toml` links the C runtime statically, so users don't need the Visual C++ Redistributable.
+<p align="center">
+  <img src="docs/screenshots/start.png" alt="Clipdat start screen" width="420">
+</p>
 
 ## Install
 
-Run `Cliper-Setup-<version>.exe`. It installs for the current user only (no admin prompt) to `%LOCALAPPDATA%\Programs\Cliper`, and:
-- adds a Start menu shortcut (a desktop shortcut is optional)
-- registers Cliper as a video player, so it shows up in Windows *Default apps*. The last page can open that settings page for you
-- adds a normal uninstaller under Settings → Apps. It removes the file-type registration and the thumbnail cache, but keeps your settings
+1. Download **`Clipdat-Setup-x.y.z.exe`** from the [latest release](../../releases/latest).
+2. Run it. It installs just for you: no admin rights needed, nothing else to install.
+3. On the last page, tick **Make Clipdat my default video player** if you want videos to open in it.
 
-Updating means running a newer setup over the old one. Windows SmartScreen warns about the setup until it's code-signed (*More info → Run anyway*).
-Requirements: Windows 10 1809+ or 11, x64. Exports need an NVIDIA GPU (AV1 needs RTX 40-series).
+Updating is the same as installing: run the new setup. To uninstall, go to **Settings → Apps → Clipdat**.
 
-Tests: the planner and formatting tests, plus **real NVENC exports** against any sample video:
+There's also a **portable zip** if you'd rather not install anything. Extract it anywhere and run `clipdat.exe`.
 
-```powershell
-$env:CLIPER_BIN_DIR = "bin"; $env:CLIPER_SAMPLE = "C:\path\to\recording.mkv"
-cargo test -- --test-threads=1
-```
+> **"Windows protected your PC"?** Clipdat isn't code-signed yet, so SmartScreen doesn't recognize it. Click **More info → Run anyway**.
 
-## Shortcuts
+### Requirements
+- Windows 10 (1809 or newer) or Windows 11, 64-bit
+- An **NVIDIA GeForce GTX 10-series or newer** to export. AV1 export needs an RTX 40-series. Playback works on any GPU.
 
-| Key | Action |
-|---|---|
-| `Space` | Play / pause |
-| `Ctrl+O` | Open file |
-| `C` | Clip mode |
-| `I` / `O` | Set in / out |
-| `,` / `.` | Previous / next frame |
-| `←` / `→` | Seek ±5 s (with `Shift`: ±1 s) |
-| `↑` / `↓` | Volume |
-| `M` | Mute |
-| `F` | Fullscreen (or double-click) |
-| `N` | New segment |
-| `Del` | Delete segment |
-| `E` | Export |
-| `Ctrl+E` | Quick export with last settings |
-| `Ctrl+,` | Settings |
-| `Esc` | Close panel / exit clip mode |
+## Keyboard shortcuts
 
-You can also drop files on the window, drag the video to move the window, and scroll over the video to change the volume.
+| Key | Action | | Key | Action |
+|---|---|---|---|---|
+| `Space` | Play / pause | | `C` | Clip mode |
+| `←` `→` | Seek 5 s (`Shift`: 1 s) | | `I` / `O` | Set in / out |
+| `,` `.` | Previous / next frame | | `N` | New segment |
+| `↑` `↓` | Volume | | `Del` | Delete segment |
+| `M` | Mute | | `E` | Export |
+| `F` | Fullscreen (or double-click) | | `Ctrl+E` | Quick export with your last settings |
+| `Ctrl+O` | Open file | | `Ctrl+,` | Settings |
+| `Esc` | Close panel / leave clip mode | | | |
 
-## Default player
+You can also drop a file onto the window, drag the video to move the window, and scroll over the video to change the volume.
 
-Settings → General → **Make default…** registers Cliper for video files under HKCU (no admin needed), then opens Windows *Default apps*, where you pick Cliper. Opening another video while Cliper is running reuses the same window.
+## FAQ
 
-## Known gaps
+**Which codec should I pick for Discord?**
+**H.264**, the default. It plays inline everywhere: desktop, browser and mobile. HEVC and AV1 give better quality per MB, but not every Discord client plays them inline.
 
-- Smart cut (re-encoding only the first GOP of a lossless cut) is not implemented yet. A lossless start snaps to the previous keyframe, and the timeline shows by how much.
-- Export uses NVENC only. AMD (AMF) and Intel (QSV) encoders are detected but not used yet.
-- The installer and exe aren't code-signed yet, so SmartScreen warns about them.
-- Panels over the video are tinted glass, not blurred. GPUI can't blur mpv's separate video surface.
-- Controls hide when idle, but the mouse cursor itself doesn't (GPUI has no hidden-cursor style yet).
+**Why does my lossless clip start a little early?**
+A cut without re-encoding can only start on a keyframe. The timeline shows exactly how far the start will move back. If you need it frame-exact, use Fit to size or Best quality.
+
+**My clip is long. Will it still fit in 20 MB?**
+Clipdat lowers the resolution and frame rate step by step (1080p60 → 720p60 → 720p30…) to keep the clip watchable. If even the lowest step would look bad, it tells you before you export, so you can trim the clip or raise the limit.
+
+**Does it support AMD or Intel GPUs?**
+They work for playback today. Exporting with AMD and Intel encoders is planned.
+
+**Where do my clips go?**
+By default, `Videos\Clips`. You can change that in Settings.
+
+## Building from source
+
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Clipdat is written in Rust with [GPUI](https://www.gpui.rs/), plays video with [mpv](https://mpv.io) and encodes with [FFmpeg](https://ffmpeg.org).
+
+## Credits
+
+Clipdat ships these open-source components:
+- **[mpv](https://mpv.io) 0.41** (GPLv2+), built from the [official source](https://github.com/mpv-player/mpv/tree/v0.41.0) by `scripts/build-mpv.ps1`
+- **[FFmpeg](https://ffmpeg.org) 8.1**: an LGPL shared build by [BtbN](https://github.com/BtbN/FFmpeg-Builds)
+- **[Inter](https://rsms.me/inter/)** typeface (SIL Open Font License)

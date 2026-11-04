@@ -1,4 +1,4 @@
-// Cliper 9000: a native (GPUI) video player and clipper for Windows.
+// Clipdat: a native (GPUI) video player and clipper for Windows.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod backend;
@@ -39,10 +39,10 @@ fn main() {
         let bounds = Bounds::centered(None, size(px(1280.), px(760.)), cx);
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
-            titlebar: Some(TitlebarOptions { title: Some("Cliper".into()), appears_transparent: true, traffic_light_position: None }),
+            titlebar: Some(TitlebarOptions { title: Some("Clipdat".into()), appears_transparent: true, traffic_light_position: None }),
             window_background: WindowBackgroundAppearance::Transparent,
             window_min_size: Some(size(px(720.), px(440.))),
-            app_id: Some("Cliper".into()),
+            app_id: Some("Clipdat".into()),
             ..Default::default()
         };
         let window = cx
@@ -51,7 +51,7 @@ fn main() {
                     Ok(RawWindowHandle::Win32(h)) => h.hwnd.get(),
                     _ => 0,
                 };
-                let view = cx.new(|cx| ui::app::Cliper::new(window, cx, hwnd, tx, rx, file));
+                let view = cx.new(|cx| ui::app::Clipdat::new(window, cx, hwnd, tx, rx, file));
                 view.update(cx, |v, cx| v.focus.focus(window, cx));
                 let v2 = view.clone();
                 window.on_window_should_close(cx, move |_, cx| {
@@ -67,7 +67,7 @@ fn main() {
     });
 }
 
-/// Pull gpui-component's dark theme (used by text inputs) toward the Cliper palette.
+/// Pull gpui-component's dark theme (used by text inputs) toward the Clipdat palette.
 fn retint_theme(cx: &mut App) {
     use ui::theme::*;
     let t = Theme::global_mut(cx);

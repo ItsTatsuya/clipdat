@@ -29,7 +29,7 @@ pub fn rt() -> &'static tokio::runtime::Runtime {
     RT.get_or_init(|| {
         tokio::runtime::Builder::new_multi_thread()
             .worker_threads(2)
-            .thread_name("cliper-io")
+            .thread_name("clipdat-io")
             .enable_all()
             .build()
             .expect("tokio runtime")

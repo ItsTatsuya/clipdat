@@ -8,7 +8,7 @@ use gpui::{
 };
 
 use super::{
-    app::{Cliper, Opt},
+    app::{Clipdat, Opt},
     icons,
     theme::*,
 };
@@ -48,7 +48,7 @@ pub fn field_label(text: impl Into<SharedString>) -> Div {
     div().text_size(px(12.)).font_weight(FontWeight::SEMIBOLD).text_color(text2()).child(text.into())
 }
 
-impl Cliper {
+impl Clipdat {
     /// Records an element's window-space bounds (for drag math and menu anchors).
     pub fn probe_el(&self, id: &'static str) -> impl IntoElement {
         let probes = self.probes.clone();
@@ -78,7 +78,7 @@ impl Cliper {
         size: f32,
         box_size: f32,
         cx: &mut Context<Self>,
-        on: impl Fn(&mut Cliper, &mut Window, &mut Context<Cliper>) + 'static,
+        on: impl Fn(&mut Clipdat, &mut Window, &mut Context<Clipdat>) + 'static,
     ) -> Stateful<Div> {
         div()
             .id(id)
@@ -105,7 +105,7 @@ impl Cliper {
         label: impl Into<SharedString>,
         primary: bool,
         cx: &mut Context<Self>,
-        on: impl Fn(&mut Cliper, &mut Window, &mut Context<Cliper>) + 'static,
+        on: impl Fn(&mut Clipdat, &mut Window, &mut Context<Clipdat>) + 'static,
     ) -> Stateful<Div> {
         let fg = if primary { on_clip() } else { text() };
         div()
@@ -139,7 +139,7 @@ impl Cliper {
         opts: Vec<(T, SharedString, bool)>,
         full: bool,
         cx: &mut Context<Self>,
-        set: impl Fn(&mut Cliper, T) + 'static,
+        set: impl Fn(&mut Clipdat, T) + 'static,
     ) -> Div {
         let set = Rc::new(set);
         div()
@@ -181,7 +181,7 @@ impl Cliper {
         id: impl Into<ElementId>,
         on: bool,
         cx: &mut Context<Self>,
-        set: impl Fn(&mut Cliper, bool) + 'static,
+        set: impl Fn(&mut Clipdat, bool) + 'static,
     ) -> Stateful<Div> {
         div()
             .id(id)
@@ -199,7 +199,7 @@ impl Cliper {
                     .left(px(if on { 17.5 } else { 2.5 }))
                     .size(px(16.))
                     .rounded(px(8.))
-                    .bg(text()),
+                    .bg(if on { on_clip() } else { text() }),
             )
             .on_click(cx.listener(move |this, _, _, cx| {
                 set(this, !on);
@@ -215,7 +215,7 @@ impl Cliper {
         hint: Option<&'static str>,
         on: bool,
         cx: &mut Context<Self>,
-        set: impl Fn(&mut Cliper, bool) + 'static,
+        set: impl Fn(&mut Clipdat, bool) + 'static,
     ) -> Div {
         div()
             .flex()
@@ -244,7 +244,7 @@ impl Cliper {
         items: Vec<(T, Opt)>,
         current: T,
         cx: &mut Context<Self>,
-        set: impl Fn(&mut Cliper, T) + 'static,
+        set: impl Fn(&mut Clipdat, T) + 'static,
     ) -> AnyElement {
         let sel = items.iter().position(|(v, _)| *v == current).unwrap_or(0);
         let label = items.get(sel).map(|(_, o)| o.label.clone()).unwrap_or_else(|| "—".into());
@@ -299,7 +299,7 @@ impl Cliper {
         items: Vec<(T, Opt)>,
         current: T,
         cx: &mut Context<Self>,
-        set: impl Fn(&mut Cliper, T) + 'static,
+        set: impl Fn(&mut Clipdat, T) + 'static,
     ) -> Div {
         div()
             .flex()

@@ -1,6 +1,6 @@
 //! mpv runs as a sidecar process that renders straight into our window (`--wid`)
-//! and is driven over its JSON IPC named pipe. The WebView sits on top with a
-//! transparent background, so the UI floats over the video.
+//! and is driven over its JSON IPC named pipe. GPUI composites its
+//! transparent UI above that child window (topmost DirectComposition target).
 
 use std::{
     collections::HashMap,
@@ -50,7 +50,7 @@ pub struct Mpv {
 
 impl Mpv {
     pub async fn start(tx_ui: smol::channel::Sender<Event>, wid: isize) -> Result<Arc<Mpv>> {
-        let pipe = format!(r"\\.\pipe\cliper-mpv-{}", std::process::id());
+        let pipe = format!(r"\\.\pipe\clipdat-mpv-{}", std::process::id());
         let exe = super::util::sidecar("mpv")?;
 
         let mut cmd = Command::new(&exe);
@@ -193,7 +193,7 @@ impl Mpv {
             mpv.send_raw(json!({"command": ["observe_property", i + 1, name]}));
         }
 
-        // Keep mpv's child window underneath the WebView.
+        // Keep mpv's child window disabled for input, so clicks reach GPUI.
         tokio::task::spawn_blocking(move || {
             let t = Instant::now();
             while t.elapsed() < Duration::from_secs(10) {

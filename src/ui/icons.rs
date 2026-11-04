@@ -38,6 +38,8 @@ fn body(name: &str) -> Option<&'static str> {
         "min" => r#"<path d="M5 12h14" stroke-width="1.4"/>"#,
         "max" => r#"<rect x="5.5" y="5.5" width="13" height="13" rx="2" stroke-width="1.4"/>"#,
         "close" => r#"<path d="M6 6l12 12M18 6L6 18" stroke-width="1.4"/>"#,
+        // Brand mark (assets/brand/mark.svg): a "C" ring opening into a play button.
+        "logo" => r#"<path d="M17.75 7.18A7.5 7.5 0 1 0 17.75 16.82" stroke-width="3"/><path d="M10.6 9.3v5.4L15 12z" fill="white" stroke-width="1.2"/>"#,
         _ => return None,
     })
 }
@@ -46,7 +48,7 @@ pub struct Assets;
 
 impl AssetSource for Assets {
     fn load(&self, path: &str) -> Result<Option<Cow<'static, [u8]>>> {
-        if let Some(name) = path.strip_prefix("cliper/").and_then(|p| p.strip_suffix(".svg")) {
+        if let Some(name) = path.strip_prefix("clipdat/").and_then(|p| p.strip_suffix(".svg")) {
             if let Some(b) = body(name) {
                 let svg = format!(
                     r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">{b}</svg>"##
@@ -65,5 +67,5 @@ impl AssetSource for Assets {
 
 /// Asset path for one of our icons.
 pub fn icon(name: &str) -> SharedString {
-    format!("cliper/{name}.svg").into()
+    format!("clipdat/{name}.svg").into()
 }

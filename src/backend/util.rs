@@ -6,7 +6,7 @@ use anyhow::{anyhow, Result};
 pub fn sidecar(name: &str) -> Result<PathBuf> {
     let file = format!("{name}.exe");
     let mut candidates = Vec::new();
-    if let Ok(dir) = std::env::var("CLIPER_BIN_DIR") {
+    if let Ok(dir) = std::env::var("CLIPDAT_BIN_DIR") {
         candidates.push(PathBuf::from(dir).join(&file));
     }
     if let Some(dir) = std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.to_path_buf())) {
@@ -36,7 +36,7 @@ pub fn reveal_in_explorer(path: &str) {
 
 pub fn open_default_apps_settings() {
     let _ = std::process::Command::new("cmd")
-        .args(["/C", "start", "", "ms-settings:defaultapps?registeredAppUser=Cliper"])
+        .args(["/C", "start", "", "ms-settings:defaultapps?registeredAppUser=Clipdat"])
         .spawn();
 }
 
@@ -176,32 +176,32 @@ pub const VIDEO_EXT: &[&str] = &[
     "mp4", "mkv", "mov", "webm", "avi", "m4v", "ts", "m2ts", "flv", "wmv", "mpg", "mpeg", "3gp", "ogv",
 ];
 
-/// Registers Cliper as a video player for the current user (HKCU, no admin needed),
+/// Registers Clipdat as a video player for the current user (HKCU, no admin needed),
 /// so it shows up in Windows Settings → Default apps.
 pub fn register_file_types() -> Result<()> {
     use winreg::{enums::HKEY_CURRENT_USER, RegKey};
     let exe = std::env::current_exe()?.to_string_lossy().into_owned();
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let classes = hkcu.open_subkey_with_flags("Software\\Classes", winreg::enums::KEY_ALL_ACCESS)?;
-    let (prog, _) = classes.create_subkey("Cliper.Video")?;
-    prog.set_value("", &"Video (Cliper)")?;
+    let (prog, _) = classes.create_subkey("Clipdat.Video")?;
+    prog.set_value("", &"Video (Clipdat)")?;
     prog.create_subkey("DefaultIcon")?.0.set_value("", &format!("\"{exe}\",0"))?;
     prog.create_subkey("shell\\open\\command")?.0.set_value("", &format!("\"{exe}\" \"%1\""))?;
-    let (caps, _) = hkcu.create_subkey("Software\\Cliper\\Capabilities")?;
-    caps.set_value("ApplicationName", &"Cliper")?;
+    let (caps, _) = hkcu.create_subkey("Software\\Clipdat\\Capabilities")?;
+    caps.set_value("ApplicationName", &"Clipdat")?;
     caps.set_value("ApplicationDescription", &"Video player and clipper")?;
     let (assoc, _) = caps.create_subkey("FileAssociations")?;
     for ext in VIDEO_EXT {
-        assoc.set_value(format!(".{ext}"), &"Cliper.Video")?;
+        assoc.set_value(format!(".{ext}"), &"Clipdat.Video")?;
         let (owp, _) = classes.create_subkey(format!(".{ext}\\OpenWithProgids"))?;
-        owp.set_value("Cliper.Video", &"")?;
+        owp.set_value("Clipdat.Video", &"")?;
     }
-    let (app, _) = classes.create_subkey("Applications\\cliper.exe")?;
+    let (app, _) = classes.create_subkey("Applications\\clipdat.exe")?;
     app.create_subkey("shell\\open\\command")?.0.set_value("", &format!("\"{exe}\" \"%1\""))?;
     let (types, _) = app.create_subkey("SupportedTypes")?;
     for ext in VIDEO_EXT {
         types.set_value(format!(".{ext}"), &"")?;
     }
-    hkcu.create_subkey("Software\\RegisteredApplications")?.0.set_value("Cliper", &"Software\\Cliper\\Capabilities")?;
+    hkcu.create_subkey("Software\\RegisteredApplications")?.0.set_value("Clipdat", &"Software\\Clipdat\\Capabilities")?;
     Ok(())
 }

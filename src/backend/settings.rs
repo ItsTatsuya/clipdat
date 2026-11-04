@@ -106,11 +106,11 @@ impl Default for Settings {
 }
 
 fn path() -> PathBuf {
-    dirs::config_dir().unwrap_or_else(std::env::temp_dir).join("Cliper").join("settings.json")
+    dirs::config_dir().unwrap_or_else(std::env::temp_dir).join("Clipdat").join("settings.json")
 }
 
 pub fn cache_dir() -> PathBuf {
-    dirs::data_local_dir().unwrap_or_else(std::env::temp_dir).join("Cliper")
+    dirs::data_local_dir().unwrap_or_else(std::env::temp_dir).join("Clipdat")
 }
 
 impl Settings {

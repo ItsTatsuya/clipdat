@@ -9,13 +9,13 @@ use gpui::{
 };
 
 use super::{
-    app::{Cliper, Drag},
+    app::{Clipdat, Drag},
     theme::*,
     widgets::*,
 };
 use crate::fmt;
 
-impl Render for Cliper {
+impl Render for Clipdat {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.sync_margins(window);
         let has = self.path.is_some();
@@ -42,7 +42,7 @@ impl Render for Cliper {
             .on_drop(cx.listener(|this, paths: &ExternalPaths, window, cx| {
                 this.dropping = false;
                 let list = paths.paths();
-                if let Some(p) = list.iter().find(|p| Cliper::video_ext_ok(p)).or(list.first()) {
+                if let Some(p) = list.iter().find(|p| Clipdat::video_ext_ok(p)).or(list.first()) {
                     this.open_file(p.to_string_lossy().into_owned(), window, cx);
                 }
             }))
@@ -53,7 +53,7 @@ impl Render for Cliper {
     }
 }
 
-impl Cliper {
+impl Clipdat {
     fn stage(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let has = self.path.is_some();
         div()
@@ -133,7 +133,7 @@ impl Cliper {
                 .justify_center()
                 .window_control_area(area)
                 .text_color(text2())
-                .hover(move |s| if close { s.bg(gpui::rgb(0xc42b1c)).text_color(text()) } else { s.bg(hover()).text_color(text()) })
+                .hover(move |s| if close { s.bg(rgba_white(0x2e)).text_color(text()) } else { s.bg(hover()).text_color(text()) })
                 .child(icon(name, 16., text2()))
         };
         div()
@@ -156,8 +156,8 @@ impl Cliper {
                     .text_size(px(12.))
                     .font_weight(FontWeight::SEMIBOLD)
                     .text_color(text2())
-                    .child(div().size(px(16.)).rounded(px(5.)).bg(linear_gradient(135., linear_color_stop(clip(), 0.), linear_color_stop(gpui::rgb(0xff6a3d), 1.))))
-                    .child("Cliper"),
+                    .child(icon("logo", 16., text()))
+                    .child("Clipdat"),
             )
             .child(
                 div()
@@ -188,7 +188,7 @@ impl Cliper {
         div()
             .absolute()
             .inset_0()
-            .bg(gpui::rgb(0x0b0b0e))
+            .bg(code_bg())
             .flex()
             .items_center()
             .justify_center()
@@ -200,14 +200,17 @@ impl Cliper {
                     .gap(px(14.))
                     .child(
                         div()
-                            .size(px(72.))
-                            .rounded(px(20.))
-                            .bg(linear_gradient(135., linear_color_stop(clip(), 0.), linear_color_stop(gpui::rgb(0xff6a3d), 1.)))
+                            .size(px(76.))
+                            .rounded(px(19.))
+                            .bg(linear_gradient(180., linear_color_stop(gpui::rgb(0x262626), 0.), linear_color_stop(gpui::rgb(0x0a0a0a), 1.)))
+                            .border_1()
+                            .border_color(stroke2())
                             .flex()
                             .items_center()
                             .justify_center()
-                            .child(icon("scissors", 34., on_clip())),
+                            .child(icon("logo", 50., text())),
                     )
+                    .child(div().mt(px(4.)).text_size(px(11.)).font_weight(FontWeight::SEMIBOLD).text_color(text3()).child("CLIPDAT"))
                     .child(div().text_size(px(20.)).font_weight(FontWeight::BOLD).child("Open a video"))
                     .child(div().text_size(px(12.5)).text_color(text3()).child("Drop a recording here, or press Ctrl+O"))
                     .child(div().mt(px(6.)).child(self.button("choose", Some("film"), "Choose file", true, cx, |this, w, cx| this.open_dialog(w, cx)))),
@@ -618,7 +621,7 @@ impl Cliper {
                     .overflow_y_scroll()
                     .p(px(5.))
                     .rounded(px(12.))
-                    .bg(gpui::rgba(0x1c1c22fa))
+                    .bg(menu_bg())
                     .border_1()
                     .border_color(stroke2())
                     .shadow_lg()

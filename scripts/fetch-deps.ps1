@@ -4,7 +4,7 @@ param([switch]$Force)
 $ErrorActionPreference = 'Stop'
 $root   = Split-Path -Parent $PSScriptRoot
 $bin    = Join-Path $root 'bin'
-$work   = Join-Path ([IO.Path]::GetTempPath()) ("cliper-deps-" + [guid]::NewGuid())
+$work   = Join-Path ([IO.Path]::GetTempPath()) ("clipdat-deps-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Force $bin, $work | Out-Null
 
 function Get-Asset($repo, $pattern) {
@@ -50,7 +50,7 @@ function Fetch($repo, $pattern, $exes, [switch]$WithDlls) {
 
 # mpv is built from source against this FFmpeg (scripts\build-mpv.ps1) so it doesn't embed a second copy.
 # BtbN LGPL *shared* build: ffmpeg and ffprobe share one set of DLLs instead of each embedding
-# all of FFmpeg (158 MB vs 316 MB). Has everything Cliper uses: NVENC/AMF/QSV, AAC, Opus,
+# all of FFmpeg (158 MB vs 316 MB). Has everything Clipdat uses: NVENC/AMF/QSV, AAC, Opus,
 # scale_cuda, zscale/tonemap, loudnorm. It drops only software encoders (x264/x265) we don't call.
 Fetch 'BtbN/FFmpeg-Builds' '^ffmpeg-n8\.1-latest-win64-lgpl-shared-8\.1\.zip$' @('ffmpeg', 'ffprobe') -WithDlls
 Remove-Item $work -Recurse -Force

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use gpui::{canvas, div, fill, img, point, prelude::*, px, relative, size, Bounds, Context, FontWeight, MouseButton, MouseDownEvent, MouseMoveEvent, ObjectFit};
 
 use super::{
-    app::{Cliper, Drag, DOCK_H},
+    app::{Clipdat, Drag, DOCK_H},
     theme::*,
     widgets::*,
 };
@@ -14,7 +14,7 @@ use crate::{backend::settings::Mode, fmt};
 const STRIP_H: f32 = 54.0;
 const TILE_W: f32 = STRIP_H * 16.0 / 9.0;
 
-impl Cliper {
+impl Clipdat {
     pub fn dock(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
         let est = self.estimate_mb();
         let over = est > self.mb;
@@ -151,7 +151,7 @@ impl Cliper {
             )
     }
 
-    fn tbtn(&self, id: &'static str, icon_name: &'static str, label: &'static str, cx: &mut Context<Self>, on: impl Fn(&mut Cliper) + 'static) -> impl IntoElement {
+    fn tbtn(&self, id: &'static str, icon_name: &'static str, label: &'static str, cx: &mut Context<Self>, on: impl Fn(&mut Clipdat) + 'static) -> impl IntoElement {
         div()
             .id(id)
             .h(px(32.))
@@ -268,7 +268,7 @@ impl Cliper {
                             .w(px(TILE_W))
                             .h_full()
                             .flex_none()
-                            .bg(gpui::rgb(if loading { 0x16161b } else { 0x0d0d10 }))
+                            .bg(gpui::rgb(if loading { 0x161616 } else { 0x0d0d0d }))
                             .when_some(p, |d, p| d.child(img(p).size_full().object_fit(ObjectFit::Cover)))
                     })),
             )

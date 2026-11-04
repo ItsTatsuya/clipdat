@@ -4,7 +4,7 @@ use gpui::{div, prelude::*, px, Context, Div, FontWeight, MouseButton};
 use gpui_component::input::Input;
 
 use super::{
-    app::{Cliper, Opt, SettingsTab},
+    app::{Clipdat, Opt, SettingsTab},
     theme::*,
     widgets::*,
 };
@@ -36,7 +36,7 @@ fn label(title: &'static str, hint: Option<String>) -> Div {
         .when_some(hint, |d, h| d.child(div().text_size(px(11.5)).font_weight(FontWeight::MEDIUM).text_color(text3()).child(h)))
 }
 
-impl Cliper {
+impl Clipdat {
     pub fn settings_modal(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
         let tabs = [
             (SettingsTab::General, "General", "gear"),
@@ -137,7 +137,7 @@ impl Cliper {
                 group()
                     .child(
                         row(true)
-                            .child(label("Default video player", Some("Registers Cliper for video files, then opens Windows Default apps".into())))
+                            .child(label("Default video player", Some("Registers Clipdat for video files, then opens Windows Default apps".into())))
                             .child(self.button("make-default", None, "Make default…", false, cx, |this, _, cx| this.register_default(cx))),
                     )
                     .child(row(false).child(label("Hardware decoding", None)).child(div().w(px(210.)).child(self.dd(

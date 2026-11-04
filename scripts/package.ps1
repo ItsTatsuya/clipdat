@@ -1,7 +1,7 @@
-# Builds the Cliper installer + a portable zip in dist/.
+# Builds the Clipdat installer + a portable zip in dist/.
 #   pwsh scripts/package.ps1 [-NoInstaller]
-# Output: dist/Cliper-Setup-<version>.exe (Inno Setup, per-user), dist/Cliper-portable.zip
-# Layout: dist/Cliper/cliper.exe, dist/Cliper/bin/{mpv,ffmpeg,ffprobe}.exe + DLLs
+# Output: dist/Clipdat-Setup-<version>.exe (Inno Setup, per-user), dist/Clipdat-portable.zip
+# Layout: dist/Clipdat/clipdat.exe, dist/Clipdat/bin/{mpv,ffmpeg,ffprobe}.exe + DLLs
 param([switch]$NoInstaller)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -14,23 +14,23 @@ foreach ($b in 'mpv', 'ffmpeg', 'ffprobe') {
 cargo build --release
 if ($LASTEXITCODE -ne 0) { throw "cargo build failed" }
 
-$out = Join-Path $root 'dist/Cliper'
+$out = Join-Path $root 'dist/Clipdat'
 if (Test-Path $out) { Remove-Item -Recurse -Force $out }
 New-Item -ItemType Directory -Force "$out/bin" | Out-Null
-Copy-Item target/release/cliper.exe $out
+Copy-Item target/release/clipdat.exe $out
 foreach ($b in 'mpv', 'ffmpeg', 'ffprobe') { Copy-Item "bin/$b.exe" "$out/bin/" }
 Get-ChildItem bin -Filter '*.dll' | Copy-Item -Destination "$out/bin/"   # shared FFmpeg + mpv support libraries
 Copy-Item assets/fonts/LICENSE-Inter.txt $out -ErrorAction SilentlyContinue
 @"
-Cliper 9000 (portable)
+Clipdat (portable)
 
-Run cliper.exe. To make it your default video player:
+Run clipdat.exe. To make it your default video player:
 Settings -> General -> Make default...
 
 Bundled: mpv 0.41 (GPLv2+, mpv.io, built against the shared FFmpeg), FFmpeg (LGPL shared build by BtbN, ffmpeg.org), Inter font (OFL).
 "@ | Set-Content "$out/README.txt"
 
-$zip = Join-Path $root 'dist/Cliper-portable.zip'
+$zip = Join-Path $root 'dist/Clipdat-portable.zip'
 if (Test-Path $zip) { Remove-Item $zip }
 Compress-Archive -Path $out -DestinationPath $zip -CompressionLevel Optimal
 "{0}  ({1:N0} MB)" -f $zip, ((Get-Item $zip).Length / 1MB)
@@ -54,7 +54,7 @@ if (-not $iscc) {
   if (-not (Test-Path $iscc)) { throw "Inno Setup install failed (expected $iscc)" }
 }
 $version = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1).Matches.Groups[1].Value
-& $iscc /Q "/DAppVersion=$version" "/DSrc=$out" "/DOut=$root\dist" installer\cliper.iss
+& $iscc /Q "/DAppVersion=$version" "/DSrc=$out" "/DOut=$root\dist" installer\clipdat.iss
 if ($LASTEXITCODE -ne 0) { throw "installer build failed" }
-$setup = Join-Path $root "dist/Cliper-Setup-$version.exe"
+$setup = Join-Path $root "dist/Clipdat-Setup-$version.exe"
 "{0}  ({1:N0} MB)" -f $setup, ((Get-Item $setup).Length / 1MB)

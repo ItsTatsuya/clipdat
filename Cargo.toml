@@ -1,12 +1,12 @@
 [package]
-name = "cliper"
+name = "clipdat"
 version = "0.2.0"
-description = "Cliper 9000 - native video player and clipper"
+description = "Clipdat - native video player and clipper"
 edition = "2021"
 build = "build.rs"
 
 [[bin]]
-name = "cliper"
+name = "clipdat"
 path = "src/main.rs"
 
 [dependencies]

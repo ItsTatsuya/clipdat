@@ -532,7 +532,7 @@ async fn run_job(
 ) -> Result<(Vec<String>, u64)> {
     let out_dir = PathBuf::from(&req.out_dir);
     tokio::fs::create_dir_all(&out_dir).await?;
-    let tmp = std::env::temp_dir().join(format!("cliper-job-{}-{id}", std::process::id()));
+    let tmp = std::env::temp_dir().join(format!("clipdat-job-{}-{id}", std::process::id()));
     tokio::fs::create_dir_all(&tmp).await?;
     let total: f64 = req.segments.iter().map(|s| (s[1] - s[0]).max(0.01)).sum();
     let merge = req.merge && req.segments.len() > 1;
@@ -618,11 +618,11 @@ async fn run_job(
 #[cfg(test)]
 mod tests {
     //! Real encodes against a sample file. Run with:
-    //! CLIPER_BIN_DIR=binaries CLIPER_SAMPLE=path/to/sample.mkv cargo test --release -- --nocapture --test-threads=1
+    //! CLIPDAT_BIN_DIR=binaries CLIPDAT_SAMPLE=path/to/sample.mkv cargo test --release -- --nocapture --test-threads=1
     use super::*;
 
     fn sample() -> Option<String> {
-        std::env::var("CLIPER_SAMPLE").ok().filter(|p| Path::new(p).exists())
+        std::env::var("CLIPDAT_SAMPLE").ok().filter(|p| Path::new(p).exists())
     }
 
     async fn req(mode: &str, codec: &str, segs: Vec<[f64; 2]>, name: &str) -> ExportReq {
@@ -639,7 +639,7 @@ mod tests {
             fps: 60.0,
             video_kbps: 0,
             merge: true,
-            out_dir: std::env::temp_dir().join("cliper-tests").to_string_lossy().into_owned(),
+            out_dir: std::env::temp_dir().join("clipdat-tests").to_string_lossy().into_owned(),
             name: name.into(),
             copy_clipboard: false,
             reveal: false,

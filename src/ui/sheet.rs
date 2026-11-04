@@ -4,7 +4,7 @@ use gpui::{div, prelude::*, px, relative, AnyElement, Context, Div, FontWeight, 
 use gpui_component::input::Input;
 
 use super::{
-    app::{Cliper, Drag, Opt, SHEET_W},
+    app::{Clipdat, Drag, Opt, SHEET_W},
     theme::*,
     widgets::*,
 };
@@ -16,7 +16,7 @@ use crate::{
     fmt, planner,
 };
 
-impl Cliper {
+impl Clipdat {
     fn has_encoder(&self, c: Codec) -> bool {
         self.gpu.as_ref().map(|g| g.encoders.iter().any(|e| e == &format!("{}_nvenc", c.id()))).unwrap_or(true)
     }
@@ -198,7 +198,7 @@ impl Cliper {
                     .cursor_pointer()
                     .hover(|s| s.border_color(stroke2()))
                     .child(div().text_size(px(14.)).font_weight(FontWeight::BOLD).child(format!("{mb} MB")))
-                    .child(div().text_size(px(10.5)).font_weight(FontWeight::SEMIBOLD).text_color(if on { gpui::rgb(0xaab2ff).into() } else { text3() }).child(l))
+                    .child(div().text_size(px(10.5)).font_weight(FontWeight::SEMIBOLD).text_color(if on { text() } else { text3() }).child(l))
                     .on_click(cx.listener(move |this, _, _, cx| {
                         this.mb = mb;
                         cx.notify();
@@ -571,7 +571,7 @@ impl Cliper {
                                 .flex()
                                 .items_center()
                                 .justify_center()
-                                .when(on, |d| d.bg(accent()).child(icon("check", 11., text())))
+                                .when(on, |d| d.bg(accent()).child(icon("check", 11., on_clip())))
                                 .when(!on, |d| d.border_1().border_color(rgba_white(0x4d))),
                         )
                         .child(title)
@@ -703,9 +703,9 @@ fn command_block(cmd: &str) -> AnyElement {
         let color = if i == 0 {
             text()
         } else if t.starts_with('"') {
-            gpui::rgb(0xffcf7a).into()
+            text()
         } else if t.starts_with('-') && t.len() > 1 && !t[1..2].chars().all(|c| c.is_ascii_digit()) {
-            gpui::rgb(0x8fb3ff).into()
+            rgba_white(0xb8)
         } else {
             text2()
         };
@@ -714,7 +714,7 @@ fn command_block(cmd: &str) -> AnyElement {
     div()
         .p(px(10.))
         .rounded(px(10.))
-        .bg(gpui::rgb(0x0a0a0d))
+        .bg(code_bg())
         .border_1()
         .border_color(stroke())
         .font_family("Cascadia Mono")

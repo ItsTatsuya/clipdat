@@ -747,7 +747,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cliper"
+name = "clipdat"
 version = "0.2.0"
 dependencies = [
  "anyhow",
