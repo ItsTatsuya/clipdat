@@ -34,6 +34,7 @@ const OBSERVED: &[&str] = &[
     "idle-active",
     "width",
     "height",
+    "video-out-params",
     "container-fps",
     "track-list",
     "speed",

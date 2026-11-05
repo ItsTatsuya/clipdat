@@ -1,7 +1,7 @@
 //! Export side sheet: mode, size limit, encoder, the Advanced section, after-export actions.
 
 use gpui::{div, prelude::*, px, relative, AnyElement, Context, Div, FontWeight, MouseButton, MouseDownEvent, SharedString, Window};
-use gpui_component::input::Input;
+use gpui_kit::component::input::Input;
 
 use super::{
     app::{Clipdat, Drag, Opt, SHEET_W},
@@ -125,7 +125,11 @@ impl Clipdat {
                                 .child(div().flex_1().child(if over {
                                     format!("{} MB is over your {} MB limit. A lossless cut keeps the source bitrate ({rate:.0} Mbps). Use Fit to size for Discord.", fmt::mb(est), self.mb)
                                 } else {
-                                    "Stream copy, no quality loss, done in seconds. The start snaps to the keyframe before your in point.".to_string()
+                                    if self.merge && self.segs.len() > 1 {
+                                        "Stream copy, no quality loss, done in seconds. Frame-exact start; each later segment starts on the keyframe before its in point so the merge stays in sync.".to_string()
+                                    } else {
+                                        "Stream copy, no quality loss, done in seconds, cut on the exact frame.".to_string()
+                                    }
                                 })),
                         )
                     })
@@ -463,7 +467,8 @@ impl Clipdat {
         let vol_items = |vals: &[f64]| -> Vec<(f64, Opt)> {
             vals.iter().map(|v| (*v, Opt::new(if *v == 0.0 { "Unchanged".to_string() } else { format!("{}{} dB", if *v > 0.0 { "+" } else { "−" }, v.abs()) }))).collect()
         };
-        let cpu_note = a.crop != "src" || a.hdr == "tonemap" || a.sharpen > 0.0;
+        let src_hdr = self.info.as_ref().is_some_and(|i| i.hdr);
+        let cpu_note = a.crop != "src" || (a.hdr == "tonemap" && src_hdr) || a.sharpen > 0.0 || a.range != "auto";
 
         let grid = |children: Vec<Div>| div().grid().grid_cols(2).gap(px(8.)).children(children);
 
@@ -507,7 +512,11 @@ impl Clipdat {
                 .child(sub_header("Encoder"))
                 .child(grid(vec![
                     self.dd_field("Preset", "a-preset", s(&[("p1", "P1 · Fastest", Some("Fastest, lowest quality")), ("p2", "P2 · Faster", None), ("p3", "P3 · Fast", None), ("p4", "P4 · Medium", Some("NVENC default")), ("p5", "P5 · Slow", None), ("p6", "P6 · Slower", Some("Recommended for clips")), ("p7", "P7 · Slowest", Some("Best quality, ~2× slower than P4"))]), a.preset.clone(), cx, |t, v| t.settings.adv.preset = v),
-                    self.dd_field("Tune", "a-tune", s(&[("hq", "High quality", Some("For recordings and uploads")), ("ll", "Low latency", Some("For streaming")), ("ull", "Ultra-low latency", None), ("lossless", "Lossless", Some("Huge files"))]), a.tune.clone(), cx, |t, v| t.settings.adv.tune = v),
+                    self.dd_field("Tune", "a-tune", {
+                        let mut v = s(&[("hq", "High quality", Some("For recordings and uploads")), ("ll", "Low latency", Some("For streaming")), ("ull", "Ultra-low latency", None)]);
+                        v.push(("lossless".to_string(), Opt::new("Lossless").desc("Huge files").disabled_if(size_mode, "Ignores the size limit")));
+                        v
+                    }, a.tune.clone(), cx, |t, v| t.settings.adv.tune = v),
                     self.dd_field("Profile", "a-prof", profile_items, a.profile.clone(), cx, |t, v| t.settings.adv.profile = v),
                     self.dd_field("Bit depth", "a-depth", depth_items, a.depth, cx, |t, v| t.settings.adv.depth = v),
                     self.dd_field("B-frames", "a-bf", u(&[(0, "None", None), (1, "1", None), (2, "2", None), (3, "3", Some("Recommended")), (4, "4", None)]), a.bframes, cx, |t, v| t.settings.adv.bframes = v),
@@ -533,12 +542,15 @@ impl Clipdat {
                 .child(grid(vec![
                     self.dd_field("Scaling", "a-scale", s(&[("lanczos", "Lanczos", Some("Sharpest")), ("bicubic", "Bicubic", None), ("bilinear", "Bilinear", None), ("nearest", "Nearest", Some("Pixel art"))]), a.scale.clone(), cx, |t, v| t.settings.adv.scale = v),
                     self.dd_field("Crop", "a-crop", s(&[("src", "Source", None), ("916", "9:16 vertical", Some("Centered, for phones")), ("11", "1:1 square", None), ("43", "4:3", None), ("219", "21:9", Some("Ultrawide"))]), a.crop.clone(), cx, |t, v| t.settings.adv.crop = v),
-                    self.dd_field("HDR", "a-hdr", s(&[("keep", "Keep source", Some(if self.info.as_ref().is_some_and(|i| i.hdr) { "Source is HDR" } else { "Source is SDR" })), ("tonemap", "Tone map to SDR", Some("Hable, for HDR captures"))]), a.hdr.clone(), cx, |t, v| t.settings.adv.hdr = v),
+                    self.dd_field("HDR", "a-hdr", vec![
+                        ("keep".to_string(), Opt::new("Keep source").desc(if src_hdr { "Source is HDR" } else { "Source is SDR" })),
+                        ("tonemap".to_string(), Opt::new("Tone map to SDR").desc("Hable, for HDR captures").disabled_if(!src_hdr, "Source is already SDR")),
+                    ], a.hdr.clone(), cx, |t, v| t.settings.adv.hdr = v),
                     self.dd_field("Color range", "a-range", s(&[("auto", "Auto", None), ("tv", "Limited", Some("16–235, standard")), ("pc", "Full", Some("0–255"))]), a.range.clone(), cx, |t, v| t.settings.adv.range = v),
                     self.dd_field("Frame timing", "a-vsync", s(&[("cfr", "Constant", Some("Smooth playback in Discord")), ("vfr", "Variable", Some("Keep source timestamps"))]), a.vsync.clone(), cx, |t, v| t.settings.adv.vsync = v),
                     self.dd_field("Sharpen", "a-sharp", num(&[(0.0, "Off", None), (0.3, "Light", None), (0.6, "Medium", None), (1.0, "Strong", None)]), a.sharpen, cx, |t, v| t.settings.adv.sharpen = v),
                 ]))
-                .when(cpu_note, |d| d.child(div().mt(px(8.)).child(note("info", text3(), "Crop, tone mapping and sharpening run on the CPU, so this export will be slower"))));
+                .when(cpu_note, |d| d.child(div().mt(px(8.)).child(note("info", text3(), "Crop, tone mapping, sharpening and range changes run on the CPU, so this export will be slower"))));
         }
 
         body = body.child(sub_header("Audio"));

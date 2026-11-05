@@ -1,6 +1,6 @@
 [package]
 name = "clipdat"
-version = "0.2.2"
+version = "0.3.0"
 description = "Clipdat - native video player and clipper"
 license = "MIT"
 repository = "https://github.com/ItsTatsuya/clipdat"
@@ -12,10 +12,7 @@ name = "clipdat"
 path = "src/main.rs"
 
 [dependencies]
-gpui = { package = "gpui-pre", version = "=0.3.11" }
-gpui-component = "0.9.0"
-gpui-kit-assets = "0.9.0"
-gpui_platform = { package = "gpui-pre-platform", version = "=0.3.11" }
+gpui-kit = "0.9.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"

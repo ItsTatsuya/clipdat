@@ -57,11 +57,11 @@ impl AssetSource for Assets {
             }
             return Ok(None);
         }
-        gpui_kit_assets::Assets.load(path)
+        gpui_kit::assets::Assets.load(path)
     }
 
     fn list(&self, path: &str) -> Result<Vec<SharedString>> {
-        gpui_kit_assets::Assets.list(path)
+        gpui_kit::assets::Assets.list(path)
     }
 }
 

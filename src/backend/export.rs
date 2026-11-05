@@ -126,6 +126,9 @@ pub struct ExportReq {
     pub src_height: u32,
     pub src_fps: f64,
     pub audio_tracks: usize,
+    /// Source is HDR (PQ / HLG). Tone mapping only applies to HDR sources.
+    #[serde(default)]
+    pub src_hdr: bool,
     pub adv: Adv,
 }
 
@@ -270,14 +273,22 @@ pub fn segment_args(req: &ExportReq, seg: [f64; 2], out: &str, video_kbps: u32) 
     if req.mode == "lossless" {
         args.extend(input_args(seg, &req.input));
         args.extend(audio_args(req).0);
-        args.extend([s("-c:v"), s("copy"), s("-avoid_negative_ts"), s("make_zero")]);
+        // Video is copied from the keyframe before the in point; the muxer keeps those
+        // lead-in frames at negative timestamps and writes an edit list that skips them, so
+        // the clip plays from the exact in point with audio in step. (No avoid_negative_ts:
+        // shifting to zero would expose the lead-in and leave silence under it.)
+        args.extend([s("-c:v"), s("copy")]);
         args.extend(tail_args(req));
         args.push(s(out));
         return args;
     }
 
     let crop = crop_rect(&a.crop, req.src_width, req.src_height);
-    let cpu_filters = crop.is_some() || a.hdr == "tonemap" || a.sharpen > 0.0;
+    // zscale needs HDR transfer tags to tone map; on SDR input it fails ("no path between colorspaces").
+    let tonemap = a.hdr == "tonemap" && req.src_hdr;
+    // A range change needs a conversion that CUDA frames can't do (scale_cuda has no range option),
+    // so it goes through the CPU path like the other filters.
+    let cpu_filters = crop.is_some() || tonemap || a.sharpen > 0.0 || a.range != "auto";
     let gpu_frames = a.hwdec && !cpu_filters;
     if a.hwdec {
         args.extend([s("-hwaccel"), s("cuda")]);
@@ -304,7 +315,7 @@ pub fn segment_args(req: &ExportReq, seg: [f64; 2], out: &str, video_kbps: u32) 
         if let Some((x, y, w, h)) = crop {
             vf.push(format!("crop={w}:{h}:{x}:{y}"));
         }
-        if a.hdr == "tonemap" {
+        if tonemap {
             vf.push(s("zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv"));
         }
         if scale_needed {
@@ -325,7 +336,9 @@ pub fn segment_args(req: &ExportReq, seg: [f64; 2], out: &str, video_kbps: u32) 
     let (aargs, _) = audio_args(req);
     args.extend(aargs);
 
-    args.extend([s("-c:v"), s(encoder(&req.codec)), s("-preset"), a.preset.clone(), s("-tune"), a.tune.clone()]);
+    // Lossless ignores any bitrate target, so it can't fit a size limit; Fit to size uses hq instead.
+    let tune = if req.mode == "size" && a.tune == "lossless" { "hq" } else { a.tune.as_str() };
+    args.extend([s("-c:v"), s(encoder(&req.codec)), s("-preset"), a.preset.clone(), s("-tune"), s(tune)]);
     // Only pass a profile the encoder accepts; 10-bit HEVC needs Main 10.
     let profile = match req.codec.as_str() {
         "hevc" if ten_bit => Some("main10"),
@@ -373,10 +386,12 @@ pub fn segment_args(req: &ExportReq, seg: [f64; 2], out: &str, video_kbps: u32) 
     if a.refs != "auto" {
         args.extend([s("-refs"), a.refs.clone()]);
     }
-    if a.spatial_aq {
+    // NVENC refuses to open with adaptive quantization in lossless mode.
+    let lossless_tune = tune == "lossless";
+    if a.spatial_aq && !lossless_tune {
         args.extend([s("-spatial-aq"), s("1"), s("-aq-strength"), s(a.aq_strength)]);
     }
-    if a.temporal_aq {
+    if a.temporal_aq && !lossless_tune {
         args.extend([s("-temporal-aq"), s("1")]);
     }
     if a.range != "auto" {
@@ -581,6 +596,12 @@ async fn run_job(
                 s("-hide_banner"), s("-y"), s("-nostats"), s("-f"), s("concat"), s("-safe"), s("0"),
                 s("-i"), list.to_string_lossy().into_owned(), s("-map"), s("0"), s("-c"), s("copy"),
             ];
+            if req.mode == "lossless" {
+                // Keep the first segment's hidden lead-in at negative timestamps so the output's
+                // edit list still skips it. Without this, copied audio (which has its own lead-in)
+                // makes ffmpeg shift everything to zero and the lead-in plays.
+                args.push(s("-copyts"));
+            }
             if req.adv.faststart {
                 args.extend([s("-movflags"), s("+faststart")]);
             }
@@ -647,6 +668,7 @@ mod tests {
             src_height: info.height,
             src_fps: info.fps,
             audio_tracks: info.audio.len(),
+            src_hdr: info.hdr,
             adv: Adv::default(),
         }
     }
@@ -688,6 +710,137 @@ mod tests {
         let info = crate::backend::media::probe(&files[0]).await.unwrap();
         assert_eq!(info.height, 1440);
         assert!(info.duration > 9.0 && info.duration < 12.5, "duration {}", info.duration);
+    }
+
+    /// (frames a player shows, video stream duration, first audio stream duration).
+    async fn shown(path: &str) -> (u64, f64, f64) {
+        let out = sidecar_cmd("ffprobe")
+            .unwrap()
+            .args(["-v", "error", "-count_frames", "-show_entries", "stream=codec_type,duration,nb_read_frames", "-of", "json", path])
+            .output()
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+        let streams = v["streams"].as_array().unwrap();
+        let get = |t: &str| streams.iter().find(|s| s["codec_type"] == t).unwrap();
+        let num = |x: &serde_json::Value| x.as_str().and_then(|s| s.parse::<f64>().ok()).unwrap_or(0.0);
+        (num(&get("video")["nb_read_frames"]) as u64, num(&get("video")["duration"]), num(&get("audio")["duration"]))
+    }
+
+    #[tokio::test]
+    async fn lossless_is_frame_exact() {
+        if sample().is_none() { return; }
+        let r = req("lossless", "h264", vec![[5.3, 15.0]], "t_lossless_exact").await;
+        let (files, _) = run(&r).await;
+        let (frames, vd, ad) = shown(&files[0]).await;
+        let want = (9.7 * r.src_fps).round() as i64;
+        assert!((frames as i64 - want).abs() <= 1, "shows {frames} frames, want {want}");
+        assert!((vd - 9.7).abs() < 0.05 && (ad - 9.7).abs() < 0.05, "video {vd} s, audio {ad} s");
+    }
+
+    #[tokio::test]
+    async fn lossless_merge_stays_in_sync() {
+        if sample().is_none() { return; }
+        // The UI starts every merged segment after the first on a keyframe (see
+        // `Clipdat::snaps_to_keyframe`); the sample's keyframes are 10 s apart.
+        // Copied audio carries its own lead-in, which used to defeat the merged edit list.
+        for acodec in ["aac", "copy"] {
+            let mut r = req("lossless", "h264", vec![[5.3, 15.0], [20.001, 30.0]], &format!("t_lossless_merge_{acodec}")).await;
+            r.adv.acodec = acodec.into();
+            let (files, _) = run(&r).await;
+            let (frames, vd, ad) = shown(&files[0]).await;
+            let total = 9.7 + 9.999;
+            let want = (total * r.src_fps).round() as i64;
+            assert!((frames as i64 - want).abs() <= 2, "{acodec}: shows {frames} frames, want {want}");
+            assert!((vd - ad).abs() < 0.1, "{acodec}: out of sync: video {vd} s, audio {ad} s");
+            assert!((ad - total).abs() < 0.1, "{acodec}: audio {ad} s, want {total}");
+        }
+    }
+
+    /// Every choice the Advanced panel offers must still be accepted by the bundled ffmpeg
+    /// (FFmpeg drops deprecated NVENC options and filters across major versions).
+    #[tokio::test]
+    async fn every_advanced_option_is_accepted() {
+        if sample().is_none() { return; }
+        type Tweak = fn(&mut ExportReq);
+        let cases: Vec<(&str, Tweak)> = vec![
+            ("p1", |r| r.adv.preset = "p1".into()),
+            ("p4", |r| r.adv.preset = "p4".into()),
+            ("p7", |r| r.adv.preset = "p7".into()),
+            ("tune ll", |r| r.adv.tune = "ll".into()),
+            ("tune ull", |r| r.adv.tune = "ull".into()),
+            ("tune lossless", |r| { r.mode = "quality".into(); r.adv.tune = "lossless".into() }),
+            ("tune lossless in size mode", |r| r.adv.tune = "lossless".into()),
+            ("cbr", |r| r.adv.rc = "cbr".into()),
+            ("cq", |r| { r.mode = "quality".into(); r.adv.rc = "cq".into() }),
+            ("qp", |r| { r.mode = "quality".into(); r.adv.rc = "qp".into() }),
+            ("quality vbr", |r| { r.mode = "quality".into(); r.adv.rc = "vbr".into() }),
+            ("multipass off", |r| r.adv.multipass = "disabled".into()),
+            ("multipass qres", |r| r.adv.multipass = "qres".into()),
+            ("no lookahead", |r| r.adv.lookahead = 0),
+            ("bref each", |r| r.adv.bref = "each".into()),
+            ("bref off", |r| r.adv.bref = "disabled".into()),
+            ("no bframes", |r| r.adv.bframes = 0),
+            ("weighted pred", |r| r.adv.weighted_pred = true),
+            ("refs 4", |r| r.adv.refs = "4".into()),
+            ("no aq", |r| { r.adv.spatial_aq = false; r.adv.temporal_aq = false }),
+            ("profile main", |r| r.adv.profile = "main".into()),
+            ("profile baseline", |r| { r.adv.profile = "baseline".into(); r.adv.bframes = 0 }),
+            ("range pc", |r| r.adv.range = "pc".into()),
+            ("vfr", |r| r.adv.vsync = "vfr".into()),
+            ("cpu scale bicubic", |r| { r.adv.hwdec = false; r.adv.scale = "bicubic".into() }),
+            ("cuda scale nearest", |r| r.adv.scale = "nearest".into()),
+            ("crop 1:1", |r| r.adv.crop = "11".into()),
+            ("crop 21:9", |r| r.adv.crop = "219".into()),
+            ("tonemap on SDR (ignored)", |r| r.adv.hdr = "tonemap".into()),
+            ("range tv", |r| r.adv.range = "tv".into()),
+            ("sharpen", |r| r.adv.sharpen = 0.6),
+            ("30 fps", |r| r.fps = 30.0),
+            ("hevc", |r| { r.codec = "hevc".into(); r.adv.profile = "main".into() }),
+            ("hevc 10-bit", |r| { r.codec = "hevc".into(); r.adv.depth = 10 }),
+            ("av1", |r| r.codec = "av1".into()),
+            ("av1 10-bit", |r| { r.codec = "av1".into(); r.adv.depth = 10 }),
+            ("opus", |r| r.adv.acodec = "libopus".into()),
+            ("mono 44.1k", |r| { r.adv.channels = "1".into(); r.adv.sample_rate = 44100 }),
+            ("loudnorm + volume", |r| { r.adv.loudnorm = true; r.adv.game_vol = -3.0; r.adv.mic_vol = 4.0 }),
+            ("separate tracks", |r| r.adv.mix = false),
+            ("no audio", |r| r.adv.acodec = "none".into()),
+            ("keep metadata", |r| r.adv.keep_meta = true),
+        ];
+        let mut failed = Vec::new();
+        for (i, (label, tweak)) in cases.iter().enumerate() {
+            let mut r = req("size", "h264", vec![[1.0, 3.0]], &format!("t_opt_{i}")).await;
+            r.merge = false;
+            r.video_kbps = 8000;
+            r.limit_mb = 100.0;
+            tweak(&mut r);
+            let (_tx, rx) = watch::channel(false);
+            if let Err(e) = run_job(100 + i as u64, &r, rx, &|_| {}).await {
+                failed.push(format!("{label}: {e}"));
+            }
+        }
+        assert!(failed.is_empty(), "rejected by ffmpeg:\n{}", failed.join("\n"));
+    }
+
+    /// Tone mapping on a real HDR source. Needs CLIPDAT_SAMPLE_HDR (PQ or HLG tagged).
+    #[tokio::test]
+    async fn tonemap_hdr_to_sdr() {
+        let Some(hdr) = std::env::var("CLIPDAT_SAMPLE_HDR").ok().filter(|p| Path::new(p).exists()) else { return };
+        let info = crate::backend::media::probe(&hdr).await.unwrap();
+        assert!(info.hdr, "CLIPDAT_SAMPLE_HDR is not tagged as HDR");
+        let mut r = req("quality", "h264", vec![[1.0, 3.0]], "t_tonemap").await;
+        r.input = hdr;
+        (r.src_width, r.src_height, r.src_fps, r.src_hdr, r.audio_tracks) = (info.width, info.height, info.fps, true, info.audio.len());
+        r.height = info.height;
+        r.adv.hdr = "tonemap".into();
+        let (files, _) = run(&r).await;
+        let out = sidecar_cmd("ffprobe")
+            .unwrap()
+            .args(["-v", "error", "-select_streams", "v", "-show_entries", "stream=color_transfer", "-of", "csv=p=0", &files[0]])
+            .output()
+            .await
+            .unwrap();
+        assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "bt709");
     }
 
     #[tokio::test]

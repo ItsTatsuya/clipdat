@@ -1,7 +1,7 @@
 //! Settings modal: General, Export, GPU, Shortcuts.
 
 use gpui::{div, prelude::*, px, Context, Div, FontWeight, MouseButton};
-use gpui_component::input::Input;
+use gpui_kit::component::input::Input;
 
 use super::{
     app::{Clipdat, Opt, SettingsTab},
