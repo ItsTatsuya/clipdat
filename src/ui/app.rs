@@ -13,7 +13,7 @@ use gpui::{
     AppContext, Bounds, Context, Entity, FocusHandle, KeyDownEvent, Pixels, Point, SharedString, Subscription,
     Task, Window,
 };
-use gpui_component::input::{InputEvent, InputState};
+use gpui_kit::component::input::{InputEvent, InputState};
 use serde_json::{json, Value};
 
 use crate::backend::{
@@ -29,6 +29,8 @@ use crate::planner::{self, Plan};
 
 pub const TITLEBAR_H: f32 = 40.0;
 pub const DOCK_H: f32 = 164.0;
+/// Smallest window (logical px) that still fits the controls.
+pub const MIN_WINDOW: (f32, f32) = (720.0, 440.0);
 pub const SHEET_W: f32 = 392.0;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -180,6 +182,12 @@ pub struct Clipdat {
     win_drag: bool,
     pending_click: Option<Task<()>>,
     last_margins: (f32, f32),
+    /// Display size of the current video (after rotation / aspect), from mpv.
+    video_dsize: (f64, f64),
+    /// Reshape the window to the next video size mpv reports (set on each open).
+    fit_pending: bool,
+    /// mpv has reported "file-loaded" for the current file.
+    file_loaded: bool,
     pub cmd_copied: Option<Instant>,
 }
 
@@ -320,6 +328,9 @@ impl Clipdat {
             win_drag: false,
             pending_click: None,
             last_margins: (-1.0, -1.0),
+            video_dsize: (0.0, 0.0),
+            fit_pending: false,
+            file_loaded: false,
             cmd_copied: None,
         };
 
@@ -463,12 +474,25 @@ impl Clipdat {
                         }
                     }
                     "mute" => self.muted = data.as_bool().unwrap_or(false),
+                    "video-out-params" => {
+                        // Display size after aspect correction. gpu-next rotates in the renderer,
+                        // so dw/dh are still unrotated here; swap them for 90/270 degree video.
+                        let (w, h) = (data["dw"].as_f64().unwrap_or(0.0), data["dh"].as_f64().unwrap_or(0.0));
+                        let quarter = data["rotate"].as_i64().unwrap_or(0).rem_euclid(180) == 90;
+                        // Before the file has loaded this is mpv's idle placeholder (960x540), not the video.
+                        if self.file_loaded {
+                            self.video_dsize = if quarter { (h, w) } else { (w, h) };
+                        }
+                        self.fit_window(window, cx);
+                        return;
+                    }
                     _ => return,
                 }
                 cx.notify();
             }
             Event::Mpv(v) => match v["event"].as_str() {
                 Some("file-loaded") => {
+                    self.file_loaded = true;
                     if let Some(t) = self.resume_at.take() {
                         self.mpv_cmd(vec![json!("seek"), json!(t), json!("absolute+exact")]);
                         self.toast(format!("Resumed at {}", crate::fmt::short(t)), false);
@@ -528,6 +552,9 @@ impl Clipdat {
         self.codec = self.settings.default_codec;
         self.merge = self.settings.segments != SegmentsPref::Separate;
         self.name_input.update(cx, |s, cx| s.set_value("", window, cx));
+        self.video_dsize = (0.0, 0.0);
+        self.fit_pending = true;
+        self.file_loaded = false;
         self.resume_at = if self.settings.resume { self.settings.positions.get(&p).copied() } else { None };
         window.set_window_title(&format!("{} — Clipdat", crate::fmt::basename(&p)));
         self.mpv_cmd(vec![json!("loadfile"), json!(p)]);
@@ -589,11 +616,36 @@ impl Clipdat {
         cx.notify();
     }
 
-    fn remember_position(&mut self) {
-        let Some(p) = self.path.clone() else { return };
-        if !self.settings.resume {
+    /// Once the new video's size is known, reshape the window to it so there are no black bars.
+    pub fn fit_window(&mut self, window: &Window, cx: &mut Context<Self>) {
+        let (w, h) = self.video_dsize;
+        if !self.fit_pending || w <= 0.0 || h <= 0.0 {
             return;
         }
+        // A maximized or fullscreen window keeps its shape; the fit waits until it is restored
+        // (render calls this again).
+        if window.is_fullscreen() || window.is_maximized() {
+            return;
+        }
+        self.fit_pending = false;
+        let hwnd = self.hwnd;
+        let s = window.scale_factor();
+        let min = ((MIN_WINDOW.0 * s).ceil() as i32, (MIN_WINDOW.1 * s).ceil() as i32);
+        // Deferred to a foreground task: resizing synchronously inside this handler would
+        // re-enter GPUI while the app is borrowed.
+        cx.spawn(async move |_, _| util::fit_window_to_aspect(hwnd, w / h, min)).detach();
+    }
+
+    fn remember_position(&mut self) {
+        if !self.settings.resume {
+            // Drop positions saved while resume was on, so they can't resurface later.
+            if !self.settings.positions.is_empty() {
+                self.settings.positions.clear();
+                self.settings.save();
+            }
+            return;
+        }
+        let Some(p) = self.path.clone() else { return };
         if self.time > 5.0 && self.time < self.duration - 5.0 {
             self.settings.positions.insert(p, (self.time * 10.0).round() / 10.0);
         } else {
@@ -851,6 +903,25 @@ impl Clipdat {
         }
     }
 
+    /// Lossless cuts are frame-exact: video is copied from the keyframe before the in point
+    /// and an MP4 edit list hides the lead-in. An edit list only works at the head of a
+    /// file, so when segments are merged, every segment after the first has to start on a
+    /// keyframe instead (its hidden lead-in would otherwise play and desync the audio).
+    pub fn snaps_to_keyframe(&self, i: usize) -> bool {
+        self.mode == Mode::Lossless && self.merge && self.segs.len() > 1 && i > 0
+    }
+
+    /// Where segment `i` actually starts in the export.
+    fn export_start(&self, i: usize, a: f64) -> f64 {
+        if !self.snaps_to_keyframe(i) || self.keyframes.is_empty() {
+            return a;
+        }
+        // Round up to the ms so `-ss` (printed with 3 decimals) never lands before the
+        // keyframe and drags in the previous GOP.
+        let k = (self.keyframe_before(a) * 1000.0).ceil() / 1000.0;
+        k.min(a)
+    }
+
     pub fn default_name(&self, cx: &gpui::App) -> String {
         let typed = self.name_input.read(cx).value().trim().to_string();
         if !typed.is_empty() {
@@ -889,7 +960,7 @@ impl Clipdat {
         }
         ExportReq {
             input: self.path.clone().unwrap_or_default(),
-            segments: self.segs.iter().map(|g| [g.a, g.b]).collect(),
+            segments: self.segs.iter().enumerate().map(|(i, g)| [self.export_start(i, g.a), g.b]).collect(),
             mode: match self.mode {
                 Mode::Size => "size",
                 Mode::Quality => "quality",
@@ -911,6 +982,7 @@ impl Clipdat {
             src_height: i.map(|i| i.height).unwrap_or(0),
             src_fps: i.map(|i| i.fps).unwrap_or(0.0),
             audio_tracks: self.audio_track_count(),
+            src_hdr: i.is_some_and(|i| i.hdr),
             adv,
         }
     }

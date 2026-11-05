@@ -7,7 +7,9 @@ use tokio::net::windows::named_pipe::ServerOptions;
 
 use super::Event;
 
-const PIPE: &str = r"\\.\pipe\clipdat-instance";
+// Dev builds use their own pipe, so they run next to an installed Clipdat instead of
+// handing their file to it.
+const PIPE: &str = if cfg!(debug_assertions) { r"\\.\pipe\clipdat-instance-dev" } else { r"\\.\pipe\clipdat-instance" };
 
 /// Returns true if another instance took the file (this process should exit).
 pub fn forward_to_running(file: Option<&str>) -> bool {

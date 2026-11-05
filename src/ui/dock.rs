@@ -176,11 +176,12 @@ impl Clipdat {
     fn dock_note(&self) -> impl IntoElement {
         match self.mode {
             Mode::Lossless => match self.segs.get(self.act) {
+                Some(_) if !self.snaps_to_keyframe(self.act) => note("check", text3(), "Frame-exact cut"),
                 Some(g) if !self.keyframes.is_empty() => {
                     let k = self.keyframe_before(g.a);
                     let off = g.a - k;
                     if off > 0.01 {
-                        note("warn", clip(), format!("Start snaps to keyframe {} (−{:.2} s)", fmt::long(k), off))
+                        note("warn", clip(), format!("Merged: starts on keyframe {} (−{:.2} s)", fmt::long(k), off))
                     } else {
                         note("check", text3(), "In point is on a keyframe")
                     }
@@ -242,7 +243,7 @@ impl Clipdat {
         }
 
         let kf: Vec<f64> = if self.mode == Mode::Lossless && (self.keyframes.len() as f32) < width * 2.0 { self.keyframes.clone() } else { Vec::new() };
-        let snap = if self.mode == Mode::Lossless { self.segs.get(self.act).map(|g| (self.keyframe_before(g.a), g.a)) } else { None };
+        let snap = if self.snaps_to_keyframe(self.act) { self.segs.get(self.act).map(|g| (self.keyframe_before(g.a), g.a)) } else { None };
         let hover = self.hover_tl.zip(bounds).map(|(x, b)| x - f32::from(b.origin.x));
 
         div()

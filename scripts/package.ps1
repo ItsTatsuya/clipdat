@@ -30,7 +30,7 @@ Settings -> General -> Make default...
 
 Clipdat is MIT licensed (LICENSE.txt). https://github.com/ItsTatsuya/clipdat
 
-Bundled: mpv 0.41 (GPLv2+, mpv.io, built against the shared FFmpeg), FFmpeg (LGPL shared build by BtbN, ffmpeg.org), Inter font (OFL).
+Bundled: mpv 0.42 (GPLv2+, mpv.io, built against the shared FFmpeg), FFmpeg (LGPL shared build by BtbN, ffmpeg.org), Inter font (OFL).
 "@ | Set-Content "$out/README.txt"
 
 $zip = Join-Path $root 'dist/Clipdat-portable.zip'

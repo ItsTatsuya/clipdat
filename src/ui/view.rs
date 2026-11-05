@@ -24,6 +24,7 @@ impl Render for Clipdat {
             window.request_animation_frame();
         }
         self.sync_margins(window);
+        self.fit_window(window, cx);
         div()
             .id("root")
             .size_full()

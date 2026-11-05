@@ -64,6 +64,8 @@ pub struct Settings {
     pub copy_clipboard: bool,
     pub reveal: bool,
     pub hwdec: String,
+    /// Off by default. Stored under a new key so the old saved default (on) is ignored.
+    #[serde(rename = "resumePlayback")]
     pub resume: bool,
     pub auto_hide_ms: u64,
     pub adv_open: bool,
@@ -92,7 +94,7 @@ impl Default for Settings {
             copy_clipboard: true,
             reveal: false,
             hwdec: "auto-safe".into(),
-            resume: true,
+            resume: false,
             auto_hide_ms: 2000,
             adv_open: false,
             show_command: true,

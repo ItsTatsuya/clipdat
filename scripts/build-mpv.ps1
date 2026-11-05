@@ -1,8 +1,8 @@
 # Builds mpv against the SAME shared FFmpeg that ships in bin/ (no second FFmpeg copy).
-#   pwsh scripts/build-mpv.ps1 [-Tag v0.41.0]
+#   pwsh scripts/build-mpv.ps1 [-Tag v0.42.0]
 # Needs: MSYS2 at C:\msys64 with the UCRT64 toolchain + libplacebo/libass (see README),
 #        build/ffmpeg-sdk (headers + import libs from the same BtbN build as bin/, made by fetch-deps.ps1).
-param([string]$Tag = "v0.41.0")
+param([string]$Tag = "v0.42.0")
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $bash = 'C:\msys64\usr\bin\bash.exe'
@@ -11,6 +11,13 @@ if (-not (Test-Path "$root\build\ffmpeg-sdk\lib\pkgconfig\libavcodec.pc")) { thr
 
 $src = "$root\build\mpv-src"
 if (-not (Test-Path $src)) { git clone --depth 1 --branch $Tag https://github.com/mpv-player/mpv.git $src }
+# An existing checkout of another tag is switched, so bumping -Tag really rebuilds that version.
+$have = (git -C $src describe --tags --exact-match 2>$null)
+if ($have -ne $Tag) {
+  git -C $src fetch --depth 1 origin "refs/tags/$($Tag):refs/tags/$Tag"
+  git -C $src checkout --force $Tag
+  if ($LASTEXITCODE -ne 0) { throw "could not check out mpv $Tag" }
+}
 
 function Unix($p) { '/' + $p.Substring(0, 1).ToLower() + ($p.Substring(2) -replace '\\', '/') }
 $env:MSYSTEM = 'UCRT64'

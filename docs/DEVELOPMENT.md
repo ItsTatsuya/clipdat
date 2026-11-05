@@ -8,7 +8,7 @@
 |---|---|
 | Video | mpv (sidecar) renders into a **child window** of the GPUI window (`--wid`), controlled over its JSON IPC pipe |
 | UI over video | GPUI's DirectComposition target is *topmost*, so its transparent UI is composited **above** mpv's child window. The child window is disabled for input, so every click goes to GPUI |
-| Processing | FFmpeg 8.1 / ffprobe sidecars, with progress from `-progress pipe:1`, on a tokio runtime |
+| Processing | FFmpeg 9.0 / ffprobe sidecars, with progress from `-progress pipe:1`, on a tokio runtime |
 | One FFmpeg | mpv is built from source against the **same shared FFmpeg DLLs** that ffmpeg/ffprobe use, so FFmpeg ships once |
 | Font / icons | Inter (embedded) with tabular digits; a custom bold SVG icon set. The palette is strictly monochrome (`src/ui/theme.rs`) |
 | Brand | `assets/brand/logo.svg` is the source for `assets/icon.ico` (`scripts/make-icon.ps1`) and the in-app `logo` icon |
@@ -44,7 +44,7 @@ pacman -S git mingw-w64-ucrt-x86_64-{gcc,meson,ninja,pkgconf,libplacebo,libass,s
 
 ```powershell
 pwsh scripts/fetch-deps.ps1     # shared FFmpeg (DLLs + ffmpeg/ffprobe) into bin/, its SDK into build/
-pwsh scripts/build-mpv.ps1      # mpv 0.41 built against that same FFmpeg, + its support DLLs into bin/
+pwsh scripts/build-mpv.ps1      # mpv 0.42 built against that same FFmpeg, + its support DLLs into bin/
 cargo run --release -- "C:\path\to\recording.mkv"
 pwsh scripts/package.ps1        # dist/Clipdat-Setup-<ver>.exe + dist/Clipdat-portable.zip
 ```
@@ -59,12 +59,15 @@ The planner and formatting tests, plus **real NVENC exports** against any sample
 
 ```powershell
 $env:CLIPDAT_BIN_DIR = "bin"; $env:CLIPDAT_SAMPLE = "C:\path\to\recording.mkv"
+$env:CLIPDAT_SAMPLE_HDR = "C:\path\to\hdr.mp4"   # optional: tests tone mapping
 cargo test -- --test-threads=1
 ```
 
+`every_advanced_option_is_accepted` runs every choice in the Advanced panel through the bundled ffmpeg. Run it after updating FFmpeg, because major versions drop NVENC options and filters.
+
 ## Known gaps
 
-- Smart cut isn't implemented yet: a lossless start snaps to the previous keyframe.
+- Lossless cuts are frame-exact through an MP4 edit list: the frames from the previous keyframe are kept but hidden. Players that ignore edit lists show them. In a merged lossless export, every segment after the first starts on its previous keyframe, because an edit list only works at the head of a file. Smart cut (re-encoding just the first GOP) isn't implemented.
 - Export uses NVENC only. AMD (AMF) and Intel (QSV) encoders are detected but not used yet.
 - The installer and exe aren't code-signed, so SmartScreen warns about them.
 - Panels over the video are tinted glass, not blurred. GPUI can't blur mpv's separate video surface.

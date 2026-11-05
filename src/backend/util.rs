@@ -130,6 +130,76 @@ mod win {
         }
     }
 
+    /// The window rect the last fit produced, and the client area it was aiming for.
+    type Fit = ((i32, i32, i32, i32), f64);
+    static LAST_FIT: std::sync::Mutex<Option<Fit>> = std::sync::Mutex::new(None);
+
+    /// Reshapes the window so its client area has the video's aspect ratio (no black bars).
+    /// Keeps roughly the same on-screen area and centre, stays inside the monitor's work area
+    /// and never goes below `min` (physical pixels). Skips maximized windows.
+    ///
+    /// Must not run inside a GPUI handler: SetWindowPos sends WM_SIZE synchronously, and GPUI
+    /// would re-enter the app while it is borrowed. Call it from a spawned foreground task.
+    pub fn fit_window_to_aspect(hwnd: isize, aspect: f64, min: (i32, i32)) {
+        use windows::Win32::{
+            Foundation::RECT,
+            Graphics::Gdi::{GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST},
+            UI::WindowsAndMessaging::{GetClientRect, GetWindowRect, IsIconic, IsZoomed, SWP_NOZORDER},
+        };
+        if !(aspect.is_finite() && aspect > 0.0) {
+            return;
+        }
+        let h = HWND(hwnd as _);
+        unsafe {
+            if IsZoomed(h).as_bool() || IsIconic(h).as_bool() {
+                return;
+            }
+            let (mut wr, mut cr) = (RECT::default(), RECT::default());
+            if GetWindowRect(h, &mut wr).is_err() || GetClientRect(h, &mut cr).is_err() {
+                return;
+            }
+            let mut mi = MONITORINFO { cbSize: std::mem::size_of::<MONITORINFO>() as u32, ..Default::default() };
+            if !GetMonitorInfoW(MonitorFromWindow(h, MONITOR_DEFAULTTONEAREST), &mut mi).as_bool() {
+                return;
+            }
+            let work = mi.rcWork;
+            // Frame thickness around the client area (zero or near-zero with GPUI's custom titlebar).
+            let fx = (wr.right - wr.left) - (cr.right - cr.left);
+            let fy = (wr.bottom - wr.top) - (cr.bottom - cr.top);
+            let max_w = ((work.right - work.left) as f64 * 0.92) - fx as f64;
+            let max_h = ((work.bottom - work.top) as f64 * 0.92) - fy as f64;
+
+            // Same area as now, new shape. If the window is still exactly where our last fit put
+            // it, reuse the area that fit aimed for: a fit clamped by the screen or the minimum
+            // size must not shrink (or grow) every window after it. A manual resize resets this.
+            let now = (wr.left, wr.top, wr.right - wr.left, wr.bottom - wr.top);
+            let area = match *LAST_FIT.lock().unwrap() {
+                Some((rect, area)) if rect == now => area,
+                _ => ((cr.right - cr.left) as f64 * (cr.bottom - cr.top) as f64).max(1.0),
+            };
+            let mut w = (area * aspect).sqrt();
+            let mut hh = w / aspect;
+            // Shrink to fit the screen, then grow to the minimum (the UI needs room).
+            let s = (max_w / w).min(max_h / hh).min(1.0);
+            w *= s;
+            hh *= s;
+            let g = (min.0 as f64 / w).max(min.1 as f64 / hh).max(1.0);
+            w *= g;
+            hh *= g;
+            let (w, hh) = (w.min(max_w).round() as i32 + fx, hh.min(max_h).round() as i32 + fy);
+
+            let cx = (wr.left + wr.right) / 2;
+            let cy = (wr.top + wr.bottom) / 2;
+            let x = (cx - w / 2).clamp(work.left, (work.right - w).max(work.left));
+            let y = (cy - hh / 2).clamp(work.top, (work.bottom - hh).max(work.top));
+            *LAST_FIT.lock().unwrap() = Some(((x, y, w, hh), area));
+            if (x, y, w, hh) == now {
+                return;
+            }
+            let _ = SetWindowPos(h, None, x, y, w, hh, SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+    }
+
     /// Put files on the clipboard the way Explorer's "Copy" does (CF_HDROP),
     /// so Ctrl+V in Discord attaches them.
     pub fn copy_files_to_clipboard(paths: &[String]) -> anyhow::Result<()> {
@@ -177,7 +247,7 @@ mod win {
 }
 
 #[cfg(windows)]
-pub use win::{begin_window_drag, bind_to_job, copy_files_to_clipboard, tame_mpv_window};
+pub use win::{begin_window_drag, bind_to_job, copy_files_to_clipboard, fit_window_to_aspect, tame_mpv_window};
 
 pub const VIDEO_EXT: &[&str] = &[
     "mp4", "mkv", "mov", "webm", "avi", "m4v", "ts", "m2ts", "flv", "wmv", "mpg", "mpeg", "3gp", "ogv",

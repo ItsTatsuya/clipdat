@@ -1,6 +1,9 @@
 // Clipdat: a native (GPUI) video player and clipper for Windows.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+// GPUI comes through gpui-kit; the alias keeps `gpui::` paths (and macro output) resolving.
+extern crate gpui_kit as gpui;
+
 mod backend;
 mod fmt;
 mod planner;
@@ -9,7 +12,7 @@ mod ui;
 use std::borrow::Cow;
 
 use gpui::{px, size, App, AppContext, Bounds, TitlebarOptions, WindowBackgroundAppearance, WindowBounds, WindowOptions};
-use gpui_component::{Root, Theme, ThemeMode};
+use gpui_kit::component::{Root, Theme, ThemeMode};
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 
 fn main() {
@@ -23,8 +26,8 @@ fn main() {
     let (tx, rx) = smol::channel::unbounded();
     backend::instance::serve(tx.clone());
 
-    gpui_platform::application().with_assets(ui::icons::Assets).run(move |cx: &mut App| {
-        gpui_component::init(cx);
+    gpui_kit::platform::application().with_assets(ui::icons::Assets).run(move |cx: &mut App| {
+        gpui_kit::component::init(cx);
         Theme::change(ThemeMode::Dark, None, cx);
         retint_theme(cx);
         cx.text_system()
@@ -36,12 +39,12 @@ fn main() {
             ])
             .expect("fonts");
 
-        let bounds = Bounds::centered(None, size(px(1280.), px(760.)), cx);
+        let bounds = Bounds::centered(None, size(px(1280.), px(720.)), cx);
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             titlebar: Some(TitlebarOptions { title: Some("Clipdat".into()), appears_transparent: true, traffic_light_position: None }),
             window_background: WindowBackgroundAppearance::Transparent,
-            window_min_size: Some(size(px(720.), px(440.))),
+            window_min_size: Some(size(px(ui::app::MIN_WINDOW.0), px(ui::app::MIN_WINDOW.1))),
             app_id: Some("Clipdat".into()),
             ..Default::default()
         };

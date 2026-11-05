@@ -52,5 +52,5 @@ function Fetch($repo, $pattern, $exes, [switch]$WithDlls) {
 # BtbN LGPL *shared* build: ffmpeg and ffprobe share one set of DLLs instead of each embedding
 # all of FFmpeg (158 MB vs 316 MB). Has everything Clipdat uses: NVENC/AMF/QSV, AAC, Opus,
 # scale_cuda, zscale/tonemap, loudnorm. It drops only software encoders (x264/x265) we don't call.
-Fetch 'BtbN/FFmpeg-Builds' '^ffmpeg-n8\.1-latest-win64-lgpl-shared-8\.1\.zip$' @('ffmpeg', 'ffprobe') -WithDlls
+Fetch 'BtbN/FFmpeg-Builds' '^ffmpeg-n9\.0-latest-win64-lgpl-shared-9\.0\.zip$' @('ffmpeg', 'ffprobe') -WithDlls
 Remove-Item $work -Recurse -Force
